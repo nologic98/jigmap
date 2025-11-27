@@ -202,22 +202,79 @@
         HUN: { lon: 19.5, lat: 47.2 },
       };
 
-      // Simulation order - a "trip around the world"
-      const simulationOrder = [
-        'MEX', 'BRA', 'ARG', 'CHL', 'GBR', 'FRA', 'ESP', 'ITA',
-        'DEU', 'NLD', 'CHE', 'GRC', 'TUR', 'EGY', 'KEN', 'ZAF',
-        'ARE', 'IND', 'THA', 'VNM', 'SGP', 'IDN', 'AUS', 'NZL',
-        'PHL', 'JPN', 'KOR', 'CHN'
+      // Regional groupings for branching routes
+      const regions = {
+        northAmerica: ['USA', 'CAN', 'MEX'],
+        southAmerica: ['BRA', 'ARG', 'CHL', 'COL', 'PER'],
+        westernEurope: ['GBR', 'FRA', 'ESP', 'PRT', 'IRL', 'NLD', 'DEU', 'CHE', 'AUT'],
+        southernEurope: ['ITA', 'GRC', 'HRV'],
+        northernEurope: ['SWE', 'NOR', 'DNK', 'FIN', 'ISL'],
+        easternEurope: ['POL', 'CZE', 'HUN', 'TUR'],
+        middleEast: ['ISR', 'ARE', 'EGY'],
+        africa: ['MAR', 'KEN', 'NGA', 'ZAF'],
+        southAsia: ['IND'],
+        southeastAsia: ['THA', 'VNM', 'SGP', 'MYS', 'IDN', 'PHL'],
+        eastAsia: ['CHN', 'JPN', 'KOR'],
+        oceania: ['AUS', 'NZL'],
+      };
+
+      // Map country to region
+      const countryToRegion = {};
+      Object.entries(regions).forEach(([region, countries]) => {
+        countries.forEach(c => countryToRegion[c] = region);
+      });
+
+      // Track regional hubs (first visited country in each region)
+      let regionalHubs = {};
+
+      // Simulation with regional branching - each entry is { country, fromRegional: bool }
+      // First country in a region comes from home, subsequent ones branch from previous
+      const simulationTrips = [
+        // Trip 1: Mexico quick trip
+        { country: 'MEX', fromHome: true },
+        // Trip 2: South America adventure
+        { country: 'BRA', fromHome: true },
+        { country: 'ARG', fromPrev: true },
+        { country: 'CHL', fromPrev: true },
+        // Trip 3: Western Europe
+        { country: 'GBR', fromHome: true },
+        { country: 'FRA', fromPrev: true },
+        { country: 'ESP', fromPrev: true },
+        { country: 'PRT', fromPrev: true },
+        // Trip 4: Central/Southern Europe
+        { country: 'ITA', fromHome: true },
+        { country: 'CHE', fromPrev: true },
+        { country: 'AUT', fromPrev: true },
+        { country: 'HRV', fromPrev: true },
+        { country: 'GRC', fromPrev: true },
+        // Trip 5: Southeast Asia
+        { country: 'THA', fromHome: true },
+        { country: 'VNM', fromPrev: true },
+        { country: 'SGP', fromPrev: true },
+        { country: 'IDN', fromPrev: true },
+        // Trip 6: East Asia
+        { country: 'JPN', fromHome: true },
+        { country: 'KOR', fromPrev: true },
+        { country: 'CHN', fromPrev: true },
+        // Trip 7: Oceania
+        { country: 'AUS', fromHome: true },
+        { country: 'NZL', fromPrev: true },
+        // Trip 8: Middle East & Africa
+        { country: 'ARE', fromHome: true },
+        { country: 'EGY', fromPrev: true },
+        { country: 'KEN', fromPrev: true },
+        { country: 'ZAF', fromPrev: true },
       ];
 
       const COUNTRY_PROP = 'iso_3166_1_alpha_3';
 
       // State
       let discovered = new Set(['USA']); // Start with home country
-      let routes = []; // Array of route objects { from, to, progress }
+      let routes = []; // Array of route objects { from, to, progress, isRegional }
       let isSimulating = false;
       let simulationIndex = 0;
       let animationFrame = null;
+      let lastVisitedCountry = null; // Track for regional branching
 
       const isMobile = window.innerWidth <= 480;
 
@@ -268,7 +325,7 @@
         routes.forEach((route, idx) => {
           if (route.progress <= 0) return;
 
-          const start = [HOME.lon, HOME.lat];
+          const start = [route.from.lon, route.from.lat];
           const end = [route.to.lon, route.to.lat];
           const fullArc = turf.greatCircle(start, end, { npoints: 100 });
 
@@ -286,6 +343,7 @@
             properties: {
               index: idx,
               complete: route.progress >= 1,
+              isRegional: route.isRegional || false,
             },
           });
         });
@@ -293,31 +351,36 @@
       }
 
       // Animate a single route
-      function animateRoute(countryCode, onComplete) {
+      function animateRoute(countryCode, fromLocation, isRegional, onComplete) {
         const centroid = countryCentroids[countryCode];
         if (!centroid) {
           if (onComplete) onComplete();
           return;
         }
 
-        const route = { to: centroid, country: countryCode, progress: 0 };
+        const from = fromLocation || HOME;
+        const route = { from, to: centroid, country: countryCode, progress: 0, isRegional };
         routes.push(route);
         const routeIndex = routes.length - 1;
 
         // Calculate bounds for camera
         const bounds = new mapboxgl.LngLatBounds();
-        bounds.extend([HOME.lon, HOME.lat]);
+        bounds.extend([from.lon, from.lat]);
         bounds.extend([centroid.lon, centroid.lat]);
+
+        // For regional routes, zoom in more; for home routes, show wider view
+        const maxZoom = isRegional ? 4 : 5;
+        const padding = isRegional ? (isMobile ? 80 : 120) : (isMobile ? 60 : 100);
 
         // Fly to show the route
         map.fitBounds(bounds, {
-          padding: isMobile ? 60 : 100,
-          duration: 1500,
-          maxZoom: 5,
+          padding,
+          duration: isRegional ? 1200 : 1500,
+          maxZoom,
         });
 
-        // Animate the line drawing
-        const duration = 1200;
+        // Animate the line drawing (regional routes animate faster)
+        const duration = isRegional ? 800 : 1200;
         const startTime = performance.now();
 
         function animate(currentTime) {
@@ -338,6 +401,7 @@
           } else {
             // Animation complete - mark country as discovered
             discovered.add(countryCode);
+            lastVisitedCountry = countryCode;
             refreshCountryStyling();
             if (onComplete) onComplete();
           }
@@ -351,7 +415,7 @@
       }
 
       // Discover a country (click or simulation)
-      function discoverCountry(countryCode) {
+      function discoverCountry(countryCode, fromPrev = false) {
         if (discovered.has(countryCode)) return;
         if (!countryCentroids[countryCode]) {
           // Country not in our list, just highlight it
@@ -359,12 +423,22 @@
           refreshCountryStyling();
           return;
         }
-        animateRoute(countryCode);
+
+        // Determine origin: from previous country or from home
+        let fromLocation = HOME;
+        let isRegional = false;
+
+        if (fromPrev && lastVisitedCountry && countryCentroids[lastVisitedCountry]) {
+          fromLocation = countryCentroids[lastVisitedCountry];
+          isRegional = true;
+        }
+
+        animateRoute(countryCode, fromLocation, isRegional);
       }
 
-      // Run simulation
+      // Run simulation with branching trips
       function runSimulation() {
-        if (simulationIndex >= simulationOrder.length) {
+        if (simulationIndex >= simulationTrips.length) {
           stopSimulation();
           // Zoom out to show the full network
           setTimeout(() => {
@@ -377,18 +451,29 @@
           return;
         }
 
-        const country = simulationOrder[simulationIndex];
+        const trip = simulationTrips[simulationIndex];
         simulationIndex++;
 
-        if (discovered.has(country)) {
+        if (discovered.has(trip.country)) {
           // Skip already discovered, continue immediately
           setTimeout(runSimulation, 100);
           return;
         }
 
-        animateRoute(country, () => {
+        // Determine origin
+        let fromLocation = HOME;
+        let isRegional = false;
+
+        if (trip.fromPrev && lastVisitedCountry && countryCentroids[lastVisitedCountry]) {
+          fromLocation = countryCentroids[lastVisitedCountry];
+          isRegional = true;
+        }
+
+        animateRoute(trip.country, fromLocation, isRegional, () => {
           if (isSimulating) {
-            setTimeout(runSimulation, 800);
+            // Shorter delay for regional hops, longer for new trips from home
+            const delay = isRegional ? 500 : 800;
+            setTimeout(runSimulation, delay);
           }
         });
       }
@@ -414,6 +499,8 @@
         discovered = new Set(['USA']);
         routes = [];
         simulationIndex = 0;
+        lastVisitedCountry = null;
+        regionalHubs = {};
 
         const source = map.getSource('routes');
         if (source) {
@@ -487,9 +574,19 @@
           type: 'line',
           source: 'routes',
           paint: {
-            'line-color': palette.route,
-            'line-width': ['interpolate', ['linear'], ['zoom'], 1, 2, 5, 3.5],
-            'line-opacity': 0.85,
+            // Regional routes are lighter/thinner than home routes
+            'line-color': [
+              'case',
+              ['get', 'isRegional'],
+              palette.routeDim,  // lighter green for regional
+              palette.route,     // darker green for home routes
+            ],
+            'line-width': [
+              'interpolate', ['linear'], ['zoom'],
+              1, ['case', ['get', 'isRegional'], 1.5, 2.5],
+              5, ['case', ['get', 'isRegional'], 2.5, 4],
+            ],
+            'line-opacity': ['case', ['get', 'isRegional'], 0.75, 0.9],
           },
           layout: {
             'line-cap': 'round',
