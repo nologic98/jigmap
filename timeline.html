@@ -364,6 +364,7 @@
 
       // Routes between places
       let routes = [];
+      let activeRouteAnimation = null;
 
       // US States GeoJSON (will be loaded)
       let usStatesGeoJSON = null;
@@ -434,6 +435,61 @@
             properties: { index: i },
           })),
         };
+      }
+
+      // Animate a new route line growing from origin to destination
+      function animateRoute(from, to, duration = 700) {
+        // Cancel any existing animation
+        if (activeRouteAnimation) {
+          cancelAnimationFrame(activeRouteAnimation);
+          activeRouteAnimation = null;
+        }
+
+        // Generate the full arc
+        const arc = turf.greatCircle([from.lon, from.lat], [to.lon, to.lat], { npoints: 60 });
+        const coords = arc.geometry.coordinates;
+        const totalPoints = coords.length;
+
+        const startTime = performance.now();
+
+        function animate(currentTime) {
+          const elapsed = currentTime - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+
+          // Ease out cubic for smooth deceleration
+          const eased = 1 - Math.pow(1 - progress, 3);
+
+          // Calculate how many points to show
+          const pointsToShow = Math.max(2, Math.floor(eased * totalPoints));
+
+          // Update the active route with partial coordinates
+          const partialCoords = coords.slice(0, pointsToShow);
+          const activeRouteData = {
+            type: 'FeatureCollection',
+            features: [{
+              type: 'Feature',
+              geometry: {
+                type: 'LineString',
+                coordinates: partialCoords,
+              },
+              properties: {},
+            }],
+          };
+
+          map.getSource('active-route')?.setData(activeRouteData);
+
+          if (progress < 1) {
+            activeRouteAnimation = requestAnimationFrame(animate);
+          } else {
+            // Animation complete - add to permanent routes and clear active
+            routes.push({ from, to });
+            map.getSource('routes')?.setData(buildRoutesGeoJSON());
+            map.getSource('active-route')?.setData({ type: 'FeatureCollection', features: [] });
+            activeRouteAnimation = null;
+          }
+        }
+
+        activeRouteAnimation = requestAnimationFrame(animate);
       }
 
       // Build US states GeoJSON with intensity colors
@@ -550,12 +606,13 @@
         const coords = getCoordsForEntry(entry);
         const days = entry.days || 1;
 
-        // Calculate distance from last location and add route
+        // Calculate distance from last location and animate route
         const distance = haversineDistance(lastCoords, coords);
         if (distance > 50) { // Only add routes for significant distances (>50 miles)
           totalMiles += distance;
-          routes.push({ from: lastCoords, to: coords });
-          map.getSource('routes')?.setData(buildRoutesGeoJSON());
+          // Animate the route growing - duration scales with playback speed
+          const animDuration = Math.max(200, 700 / playSpeed);
+          animateRoute(lastCoords, coords, animDuration);
         }
         lastCoords = coords;
 
@@ -652,7 +709,14 @@
         creditItems.forEach(c => c.remove());
         creditItems.length = 0;
 
+        // Cancel any running animation
+        if (activeRouteAnimation) {
+          cancelAnimationFrame(activeRouteAnimation);
+          activeRouteAnimation = null;
+        }
+
         map.getSource('routes')?.setData({ type: 'FeatureCollection', features: [] });
+        map.getSource('active-route')?.setData({ type: 'FeatureCollection', features: [] });
         refreshStyling();
 
         document.getElementById('progress-fill').style.width = '0%';
@@ -758,7 +822,7 @@
           },
         });
 
-        // Routes layer
+        // Completed routes layer
         map.addSource('routes', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
         map.addLayer({
           id: 'route-lines',
@@ -767,8 +831,22 @@
           paint: {
             'line-color': palette.route,
             'line-width': 2,
-            'line-opacity': 0.8,
+            'line-opacity': 0.6,
             'line-dasharray': [2, 1.5],
+          },
+          layout: { 'line-cap': 'round', 'line-join': 'round' },
+        });
+
+        // Active (animating) route layer - brighter to show it's current
+        map.addSource('active-route', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+        map.addLayer({
+          id: 'active-route-line',
+          type: 'line',
+          source: 'active-route',
+          paint: {
+            'line-color': '#52B788',
+            'line-width': 3,
+            'line-opacity': 1,
           },
           layout: { 'line-cap': 'round', 'line-join': 'round' },
         });
