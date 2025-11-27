@@ -869,7 +869,7 @@
           filter: ['!=', ['get', COUNTRY_PROP], 'USA'], // Exclude USA, we handle states separately
           paint: {
             'fill-color': palette.neutral,
-            'fill-opacity': 0.6,
+            'fill-opacity': 1,  // Full opacity to cover base map completely
           },
         });
 
@@ -901,11 +901,7 @@
               ['==', ['get', 'intensity'], 0], palette.intensity[0],
               palette.neutral,
             ],
-            'fill-opacity': [
-              'case',
-              ['get', 'visited'], 0.75,
-              0.3,
-            ],
+            'fill-opacity': 1,  // Full opacity - all states same base appearance
           },
         });
 
@@ -969,7 +965,7 @@
               ['==', ['get', 'intensity'], 0], palette.intensity[0],
               palette.intensity[0],
             ],
-            'fill-opacity': 0.75,
+            'fill-opacity': 1,  // Full opacity for visited regions
           },
         });
 
