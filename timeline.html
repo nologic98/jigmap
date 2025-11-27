@@ -106,6 +106,12 @@
         font-size: 11px;
         color: #5c7c6a;
         margin-left: auto;
+        display: flex;
+        gap: 12px;
+      }
+      .odometer {
+        font-weight: 600;
+        color: #2D6A4F;
       }
       .timeline-progress {
         height: 6px;
@@ -230,7 +236,10 @@
         <button id="btn-play">Play</button>
         <button id="btn-speed">1x</button>
         <div class="timeline-date" id="timeline-date">--</div>
-        <div class="timeline-stats" id="timeline-stats">0 places • 0 countries</div>
+        <div class="timeline-stats">
+          <span id="timeline-places">0 places</span>
+          <span class="odometer" id="odometer">0 mi</span>
+        </div>
       </div>
       <div class="timeline-progress">
         <div class="timeline-progress-fill" id="progress-fill"></div>
@@ -264,9 +273,23 @@
         'New Zealand': 'NZL',
       };
 
-      // Country centroids for routes
+      // US State name to abbreviation mapping
+      const stateToAbbr = {
+        'Alabama': 'AL', 'Alaska': 'AK', 'Arizona': 'AZ', 'Arkansas': 'AR', 'California': 'CA',
+        'Colorado': 'CO', 'Connecticut': 'CT', 'Delaware': 'DE', 'Florida': 'FL', 'Georgia': 'GA',
+        'Hawaii': 'HI', 'Idaho': 'ID', 'Illinois': 'IL', 'Indiana': 'IN', 'Iowa': 'IA',
+        'Kansas': 'KS', 'Kentucky': 'KY', 'Louisiana': 'LA', 'Maine': 'ME', 'Maryland': 'MD',
+        'Massachusetts': 'MA', 'Michigan': 'MI', 'Minnesota': 'MN', 'Mississippi': 'MS', 'Missouri': 'MO',
+        'Montana': 'MT', 'Nebraska': 'NE', 'Nevada': 'NV', 'New Hampshire': 'NH', 'New Jersey': 'NJ',
+        'New Mexico': 'NM', 'New York': 'NY', 'North Carolina': 'NC', 'North Dakota': 'ND', 'Ohio': 'OH',
+        'Oklahoma': 'OK', 'Oregon': 'OR', 'Pennsylvania': 'PA', 'Rhode Island': 'RI', 'South Carolina': 'SC',
+        'South Dakota': 'SD', 'Tennessee': 'TN', 'Texas': 'TX', 'Utah': 'UT', 'Vermont': 'VT',
+        'Virginia': 'VA', 'Washington': 'WA', 'West Virginia': 'WV', 'Wisconsin': 'WI', 'Wyoming': 'WY',
+        'District of Columbia': 'DC',
+      };
+
+      // Country centroids for routes (non-US)
       const countryCentroids = {
-        USA: { lon: -122.419, lat: 37.775 }, // SF as home
         CAN: { lon: -123.1, lat: 49.3 },
         GBR: { lon: -0.1, lat: 51.5 },
         FRA: { lon: 2.3, lat: 48.9 },
@@ -279,7 +302,7 @@
         GRC: { lon: 23.7, lat: 37.98 },
       };
 
-      // US State and region centroids for camera positioning
+      // US State and region centroids for camera positioning and routes
       const stateCentroids = {
         'California': { lon: -119.4, lat: 36.8 },
         'Florida': { lon: -81.5, lat: 27.6 },
@@ -308,15 +331,20 @@
       const HOME = { lon: -122.419, lat: 37.775 };
       const COUNTRY_PROP = 'iso_3166_1_alpha_3';
 
-      // Palette
+      // Palette - intensity levels for visits
       const palette = {
-        active: '#2D6A4F',
-        accent: '#40916C',
+        // Base colors
         neutral: '#d8e2dc',
         border: '#b7c9bc',
-        glow: '#52B788',
         route: '#2D6A4F',
-        routeDim: '#95D5B2',
+        // Intensity levels (light to dark green)
+        intensity: [
+          '#B7E4C7', // level 1: light (short visit, first time)
+          '#74C69D', // level 2: medium
+          '#40916C', // level 3: darker
+          '#2D6A4F', // level 4: dark (long visit or many visits)
+          '#1B4332', // level 5: darkest
+        ],
       };
 
       // State
@@ -325,10 +353,20 @@
       let isPlaying = false;
       let playSpeed = 1;
       let playInterval = null;
-      let discovered = new Set(['USA']);
-      let routes = [];
-      let lastCountry = 'USA';
       let visitedPlaces = 0;
+      let totalMiles = 0;
+      let lastCoords = HOME;
+
+      // Visit tracking: state/country -> { visits: number, totalDays: number }
+      const stateVisits = new Map();
+      const countryVisits = new Map();
+      let discoveredCountries = new Set();
+
+      // Routes between places
+      let routes = [];
+
+      // US States GeoJSON (will be loaded)
+      let usStatesGeoJSON = null;
 
       const isMobile = window.innerWidth <= 480;
 
@@ -339,19 +377,52 @@
         zoom: isMobile ? 3 : 4,
       });
 
-      // Expressions
-      const highlightCondition = () => ['in', ['get', COUNTRY_PROP], ['literal', Array.from(discovered)]];
-      const makeFillColor = () => ['case', highlightCondition(), palette.active, palette.neutral];
-      const makeFillOpacity = () => ['case', highlightCondition(), 0.85, 0.3];
-      const makeOutline = () => ['case', highlightCondition(), palette.accent, palette.border];
-      const makeGlow = () => ['case', highlightCondition(), palette.glow, 'rgba(0,0,0,0)'];
+      // Haversine distance calculation (returns miles)
+      function haversineDistance(coord1, coord2) {
+        const R = 3959; // Earth's radius in miles
+        const lat1 = coord1.lat * Math.PI / 180;
+        const lat2 = coord2.lat * Math.PI / 180;
+        const dLat = (coord2.lat - coord1.lat) * Math.PI / 180;
+        const dLon = (coord2.lon - coord1.lon) * Math.PI / 180;
 
-      function refreshCountryStyling() {
-        if (!map.getLayer('country-fills')) return;
-        map.setPaintProperty('country-fills', 'fill-color', makeFillColor());
-        map.setPaintProperty('country-fills', 'fill-opacity', makeFillOpacity());
-        map.setPaintProperty('country-fills', 'fill-outline-color', makeOutline());
-        map.setPaintProperty('country-glow', 'line-color', makeGlow());
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat1) * Math.cos(lat2) *
+                  Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+      }
+
+      // Calculate intensity level based on visits and days
+      // Buckets: short (1-2 days), medium (3-5 days), long (6+ days)
+      function calculateIntensity(visits, totalDays) {
+        let score = 0;
+        // Each visit adds base points
+        score += visits * 1;
+        // Days add weighted points: short=1, medium=2, long=3
+        if (totalDays >= 6) score += 3;
+        else if (totalDays >= 3) score += 2;
+        else score += 1;
+        // Map score to intensity level (1-5)
+        if (score >= 8) return 4;
+        if (score >= 5) return 3;
+        if (score >= 3) return 2;
+        if (score >= 2) return 1;
+        return 0;
+      }
+
+      // Get coordinates for an entry
+      function getCoordsForEntry(entry) {
+        // Try state/region centroid first
+        if (entry.state && stateCentroids[entry.state]) {
+          return stateCentroids[entry.state];
+        }
+        // Fallback to country centroid
+        const iso = countryToISO[entry.country];
+        if (iso && countryCentroids[iso]) {
+          return countryCentroids[iso];
+        }
+        // Final fallback to home
+        return HOME;
       }
 
       function buildRoutesGeoJSON() {
@@ -365,14 +436,67 @@
         };
       }
 
-      function buildDestinationsGeoJSON() {
-        const features = [];
-        discovered.forEach(iso => {
-          if (iso === 'USA') return;
-          const c = countryCentroids[iso];
-          if (c) features.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [c.lon, c.lat] }, properties: { iso } });
+      // Build US states GeoJSON with intensity colors
+      function buildStatesWithIntensity() {
+        if (!usStatesGeoJSON) return { type: 'FeatureCollection', features: [] };
+
+        const features = usStatesGeoJSON.features.map(f => {
+          const stateName = f.properties.NAME || f.properties.name;
+          const abbr = stateToAbbr[stateName];
+          const visit = stateVisits.get(stateName);
+
+          let intensity = -1; // not visited
+          if (visit) {
+            intensity = calculateIntensity(visit.visits, visit.totalDays);
+          }
+
+          return {
+            ...f,
+            properties: {
+              ...f.properties,
+              abbr,
+              intensity,
+              visited: visit ? true : false,
+            },
+          };
         });
+
         return { type: 'FeatureCollection', features };
+      }
+
+      // Generate country fill expression based on visits
+      function makeCountryFillColor() {
+        // Build match expression for visited countries (non-US)
+        const conditions = [];
+        countryVisits.forEach((visit, iso) => {
+          if (iso === 'USA') return; // Handle US separately via states
+          const intensity = calculateIntensity(visit.visits, visit.totalDays);
+          conditions.push(iso);
+          conditions.push(palette.intensity[intensity]);
+        });
+
+        if (conditions.length === 0) {
+          return palette.neutral;
+        }
+
+        return [
+          'match',
+          ['get', COUNTRY_PROP],
+          ...conditions,
+          palette.neutral,
+        ];
+      }
+
+      function refreshStyling() {
+        // Update country fills (non-US)
+        if (map.getLayer('country-fills')) {
+          map.setPaintProperty('country-fills', 'fill-color', makeCountryFillColor());
+        }
+
+        // Update US states
+        if (map.getSource('us-states')) {
+          map.getSource('us-states').setData(buildStatesWithIntensity());
+        }
       }
 
       function formatDate(dateStr) {
@@ -380,17 +504,24 @@
         return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
       }
 
+      function formatMiles(miles) {
+        if (miles >= 1000) {
+          return (miles / 1000).toFixed(1) + 'k mi';
+        }
+        return Math.round(miles).toLocaleString() + ' mi';
+      }
+
       function updateUI(entry) {
         document.getElementById('loc-city').textContent = entry.city;
         document.getElementById('loc-region').textContent = `${entry.state || ''}, ${entry.country}`.replace(/^, /, '');
         document.getElementById('loc-date').textContent = formatDate(entry.date);
         document.getElementById('timeline-date').textContent = formatDate(entry.date);
-        document.getElementById('timeline-stats').textContent = `${visitedPlaces} places • ${discovered.size} countries`;
+        document.getElementById('timeline-places').textContent = `${visitedPlaces} places`;
+        document.getElementById('odometer').textContent = formatMiles(totalMiles);
 
         const progress = ((currentIndex + 1) / timelineData.length) * 100;
         document.getElementById('progress-fill').style.width = progress + '%';
 
-        // Add credit
         addCredit(entry);
       }
 
@@ -401,12 +532,11 @@
         div.className = 'credit-item';
         div.innerHTML = `
           <div class="credit-city">${entry.city}</div>
-          <div class="credit-meta">${formatDate(entry.date)} • ${entry.photos} photos</div>
+          <div class="credit-meta">${formatDate(entry.date)} • ${entry.days}d • ${entry.photos} photos</div>
         `;
         container.insertBefore(div, container.firstChild);
         creditItems.unshift(div);
 
-        // Keep only last 8 credits
         while (creditItems.length > 8) {
           const old = creditItems.pop();
           old.classList.add('fading');
@@ -417,36 +547,45 @@
       function processEntry(entry) {
         visitedPlaces++;
         const iso = countryToISO[entry.country];
+        const coords = getCoordsForEntry(entry);
+        const days = entry.days || 1;
 
-        if (iso && !discovered.has(iso)) {
-          // New country!
-          discovered.add(iso);
+        // Calculate distance from last location and add route
+        const distance = haversineDistance(lastCoords, coords);
+        if (distance > 50) { // Only add routes for significant distances (>50 miles)
+          totalMiles += distance;
+          routes.push({ from: lastCoords, to: coords });
+          map.getSource('routes')?.setData(buildRoutesGeoJSON());
+        }
+        lastCoords = coords;
 
-          // Add route from last country
-          const fromC = countryCentroids[lastCountry];
-          const toC = countryCentroids[iso];
-          if (fromC && toC) {
-            routes.push({ from: fromC, to: toC });
-            map.getSource('routes')?.setData(buildRoutesGeoJSON());
+        // Track country visit
+        if (iso) {
+          if (!countryVisits.has(iso)) {
+            countryVisits.set(iso, { visits: 0, totalDays: 0 });
+            discoveredCountries.add(iso);
           }
-
-          // Update destinations
-          map.getSource('destinations')?.setData(buildDestinationsGeoJSON());
-
-          lastCountry = iso;
-          refreshCountryStyling();
+          const cv = countryVisits.get(iso);
+          cv.visits++;
+          cv.totalDays += days;
         }
 
-        // Always fly to the current location (state/region level)
-        const stateCoords = stateCentroids[entry.state];
-        if (stateCoords) {
-          // Use state/region centroid for precise positioning
-          const zoom = entry.country === 'United States' ? 6 : 5;
-          map.flyTo({ center: [stateCoords.lon, stateCoords.lat], zoom: zoom, duration: 800 });
-        } else if (iso && countryCentroids[iso]) {
-          // Fallback to country centroid
-          map.flyTo({ center: [countryCentroids[iso].lon, countryCentroids[iso].lat], zoom: 5, duration: 800 });
+        // Track US state visit
+        if (entry.country === 'United States' && entry.state) {
+          if (!stateVisits.has(entry.state)) {
+            stateVisits.set(entry.state, { visits: 0, totalDays: 0 });
+          }
+          const sv = stateVisits.get(entry.state);
+          sv.visits++;
+          sv.totalDays += days;
         }
+
+        // Refresh map styling
+        refreshStyling();
+
+        // Fly to current location
+        const zoom = entry.country === 'United States' ? 6 : 5;
+        map.flyTo({ center: [coords.lon, coords.lat], zoom: zoom, duration: 800 });
 
         updateUI(entry);
       }
@@ -468,9 +607,8 @@
         document.getElementById('btn-play').textContent = 'Pause';
         document.getElementById('btn-play').classList.add('active');
 
-        const baseDelay = 1200; // Allow time for camera animation
+        const baseDelay = 1200;
         const delay = baseDelay / playSpeed;
-
         playInterval = setInterval(playNext, delay);
       }
 
@@ -504,24 +642,37 @@
       function reset() {
         stopPlayback();
         currentIndex = 0;
-        discovered = new Set(['USA']);
+        stateVisits.clear();
+        countryVisits.clear();
+        discoveredCountries.clear();
         routes = [];
-        lastCountry = 'USA';
+        lastCoords = HOME;
         visitedPlaces = 0;
+        totalMiles = 0;
         creditItems.forEach(c => c.remove());
         creditItems.length = 0;
 
         map.getSource('routes')?.setData({ type: 'FeatureCollection', features: [] });
-        map.getSource('destinations')?.setData({ type: 'FeatureCollection', features: [] });
-        refreshCountryStyling();
+        refreshStyling();
 
         document.getElementById('progress-fill').style.width = '0%';
         document.getElementById('timeline-date').textContent = '--';
         document.getElementById('loc-city').textContent = 'Ready';
         document.getElementById('loc-region').textContent = '';
         document.getElementById('loc-date').textContent = '';
+        document.getElementById('odometer').textContent = '0 mi';
 
         map.flyTo({ center: [HOME.lon, HOME.lat], zoom: isMobile ? 3 : 4, duration: 1000 });
+      }
+
+      // Load US States GeoJSON
+      async function loadUSStates() {
+        try {
+          const response = await fetch('https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json');
+          usStatesGeoJSON = await response.json();
+        } catch (err) {
+          console.warn('Could not load US states GeoJSON:', err);
+        }
       }
 
       // Load timeline data
@@ -538,42 +689,105 @@
         });
 
       // Initialize map
-      map.on('load', () => {
+      map.on('load', async () => {
+        // Load US states first
+        await loadUSStates();
+
+        // Add country boundaries (for non-US countries)
         map.addSource('countries', { type: 'vector', url: 'mapbox://mapbox.country-boundaries-v1' });
 
         map.addLayer({
-          id: 'country-fills', type: 'fill', source: 'countries', 'source-layer': 'country_boundaries',
-          paint: { 'fill-color': makeFillColor(), 'fill-opacity': makeFillOpacity(), 'fill-outline-color': makeOutline() },
+          id: 'country-fills',
+          type: 'fill',
+          source: 'countries',
+          'source-layer': 'country_boundaries',
+          filter: ['!=', ['get', COUNTRY_PROP], 'USA'], // Exclude USA, we handle states separately
+          paint: {
+            'fill-color': palette.neutral,
+            'fill-opacity': 0.6,
+          },
         });
 
         map.addLayer({
-          id: 'country-borders', type: 'line', source: 'countries', 'source-layer': 'country_boundaries',
+          id: 'country-borders',
+          type: 'line',
+          source: 'countries',
+          'source-layer': 'country_boundaries',
           paint: { 'line-color': '#a8b5ab', 'line-width': 0.5 },
         });
 
-        map.addLayer({
-          id: 'country-glow', type: 'line', source: 'countries', 'source-layer': 'country_boundaries',
-          paint: { 'line-color': makeGlow(), 'line-width': 4, 'line-blur': 2, 'line-opacity': 0.35 },
+        // Add US states layer
+        map.addSource('us-states', {
+          type: 'geojson',
+          data: buildStatesWithIntensity(),
         });
 
+        map.addLayer({
+          id: 'us-state-fills',
+          type: 'fill',
+          source: 'us-states',
+          paint: {
+            'fill-color': [
+              'case',
+              ['==', ['get', 'intensity'], 4], palette.intensity[4],
+              ['==', ['get', 'intensity'], 3], palette.intensity[3],
+              ['==', ['get', 'intensity'], 2], palette.intensity[2],
+              ['==', ['get', 'intensity'], 1], palette.intensity[1],
+              ['==', ['get', 'intensity'], 0], palette.intensity[0],
+              palette.neutral,
+            ],
+            'fill-opacity': [
+              'case',
+              ['get', 'visited'], 0.75,
+              0.3,
+            ],
+          },
+        });
+
+        map.addLayer({
+          id: 'us-state-borders',
+          type: 'line',
+          source: 'us-states',
+          paint: {
+            'line-color': [
+              'case',
+              ['get', 'visited'], '#40916C',
+              '#b7c9bc',
+            ],
+            'line-width': 1,
+          },
+        });
+
+        // Routes layer
         map.addSource('routes', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
         map.addLayer({
-          id: 'route-lines', type: 'line', source: 'routes',
-          paint: { 'line-color': palette.route, 'line-width': 2, 'line-opacity': 0.8, 'line-dasharray': [2, 1.5] },
+          id: 'route-lines',
+          type: 'line',
+          source: 'routes',
+          paint: {
+            'line-color': palette.route,
+            'line-width': 2,
+            'line-opacity': 0.8,
+            'line-dasharray': [2, 1.5],
+          },
           layout: { 'line-cap': 'round', 'line-join': 'round' },
         });
 
-        map.addSource('destinations', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-        map.addLayer({
-          id: 'destination-points', type: 'circle', source: 'destinations',
-          paint: { 'circle-radius': 6, 'circle-color': palette.active, 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 },
-        });
-
         // Home marker
-        map.addSource('home', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'Point', coordinates: [HOME.lon, HOME.lat] } } });
+        map.addSource('home', {
+          type: 'geojson',
+          data: { type: 'Feature', geometry: { type: 'Point', coordinates: [HOME.lon, HOME.lat] } },
+        });
         map.addLayer({
-          id: 'home-point', type: 'circle', source: 'home',
-          paint: { 'circle-radius': 8, 'circle-color': '#1B4332', 'circle-stroke-color': '#52B788', 'circle-stroke-width': 3 },
+          id: 'home-point',
+          type: 'circle',
+          source: 'home',
+          paint: {
+            'circle-radius': 8,
+            'circle-color': '#1B4332',
+            'circle-stroke-color': '#52B788',
+            'circle-stroke-width': 3,
+          },
         });
       });
 
