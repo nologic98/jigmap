@@ -354,8 +354,8 @@
       // Palette - intensity levels for visits
       const palette = {
         // Base colors
-        neutral: '#d8e2dc',
-        border: '#b7c9bc',
+        neutral: '#e8e8e8',  // Pure neutral gray, no green hue
+        border: '#cccccc',   // Neutral gray border
         route: '#2D6A4F',
         // Intensity levels (light to dark green)
         intensity: [
@@ -878,7 +878,7 @@
           type: 'line',
           source: 'countries',
           'source-layer': 'country_boundaries',
-          paint: { 'line-color': '#a8b5ab', 'line-width': 0.5 },
+          paint: { 'line-color': '#cccccc', 'line-width': 0.5 },
         });
 
         // Add US states layer
@@ -913,7 +913,7 @@
             'line-color': [
               'case',
               ['get', 'visited'], '#40916C',
-              '#b7c9bc',
+              '#cccccc',
             ],
             'line-width': 1,
           },
