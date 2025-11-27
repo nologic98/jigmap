@@ -12,7 +12,7 @@
       :root {
         font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
       }
-      body { margin: 0; padding: 0; background: #020617; color: #e2e8f0; }
+      body { margin: 0; padding: 0; background: #f8faf8; color: #1B4332; }
       #map { position: absolute; top: 36px; bottom: 0; width: 100%; }
       .mapboxgl-ctrl-logo, .mapboxgl-ctrl-attrib { display: none !important; }
 
@@ -23,8 +23,8 @@
         left: 0;
         right: 0;
         height: 36px;
-        background: rgba(2, 6, 23, 0.95);
-        border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+        background: #ffffff;
+        border-bottom: 1px solid #e2e8e4;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -33,8 +33,8 @@
         font-size: 12px;
       }
       .nav-brand {
-        color: #94a3b8;
-        font-weight: 500;
+        color: #1B4332;
+        font-weight: 600;
       }
       .nav-links {
         display: flex;
@@ -44,15 +44,16 @@
         padding: 4px 10px;
         border-radius: 4px;
         text-decoration: none;
-        color: #64748b;
+        color: #5c7c6a;
         transition: color 0.15s, background 0.15s;
       }
       .nav-links a:hover {
-        color: #e2e8f0;
-        background: rgba(148, 163, 184, 0.1);
+        color: #1B4332;
+        background: rgba(27, 67, 50, 0.08);
       }
       .nav-links a.active {
-        color: #38bdf8;
+        color: #1B4332;
+        font-weight: 600;
       }
 
       /* Control panel */
@@ -61,11 +62,12 @@
         bottom: 1.5rem;
         left: 50%;
         transform: translateX(-50%);
-        background: rgba(2, 6, 23, 0.85);
-        border: 1px solid rgba(148, 163, 184, 0.2);
+        background: rgba(255, 255, 255, 0.95);
+        border: 1px solid #e2e8e4;
         border-radius: 12px;
         padding: 0.75rem 1rem;
         backdrop-filter: blur(12px);
+        box-shadow: 0 4px 20px rgba(27, 67, 50, 0.12);
         display: flex;
         gap: 0.75rem;
         align-items: center;
@@ -74,23 +76,23 @@
       .control-panel button {
         padding: 0.5rem 1rem;
         border-radius: 8px;
-        border: 1px solid rgba(148, 163, 184, 0.3);
-        background: rgba(15, 23, 42, 0.8);
-        color: #e2e8f0;
+        border: 1px solid #d1d9d4;
+        background: #ffffff;
+        color: #1B4332;
         font-size: 0.85rem;
         font-weight: 500;
         cursor: pointer;
         transition: all 0.15s;
       }
       .control-panel button:hover {
-        background: rgba(56, 189, 248, 0.2);
-        border-color: #38bdf8;
-        color: #38bdf8;
+        background: rgba(45, 106, 79, 0.1);
+        border-color: #2D6A4F;
+        color: #2D6A4F;
       }
       .control-panel button.active {
-        background: rgba(56, 189, 248, 0.25);
-        border-color: #38bdf8;
-        color: #38bdf8;
+        background: rgba(45, 106, 79, 0.15);
+        border-color: #2D6A4F;
+        color: #2D6A4F;
       }
       .control-panel button:disabled {
         opacity: 0.5;
@@ -98,12 +100,12 @@
       }
       .stats {
         font-size: 0.8rem;
-        color: #94a3b8;
+        color: #5c7c6a;
         padding: 0 0.5rem;
-        border-left: 1px solid rgba(148, 163, 184, 0.2);
+        border-left: 1px solid #e2e8e4;
       }
       .stats strong {
-        color: #f4b98d;
+        color: #2D6A4F;
       }
 
       /* Mobile adjustments */
@@ -221,20 +223,20 @@
 
       const map = new mapboxgl.Map({
         container: 'map',
-        style: 'mapbox://styles/mapbox/dark-v11',
+        style: 'mapbox://styles/mapbox/light-v11',
         center: [HOME.lon, HOME.lat],
         zoom: isMobile ? 2 : 3,
       });
 
       // Color palette
       const palette = {
-        active: '#f4b98d',
-        accent: '#ffe7c2',
-        neutral: '#020617',
-        border: '#0f172a',
-        glow: '#fcd7a5',
-        route: '#38bdf8',
-        routeDim: '#0ea5e9',
+        active: '#2D6A4F',
+        accent: '#40916C',
+        neutral: '#d8e2dc',
+        border: '#b7c9bc',
+        glow: '#52B788',
+        route: '#2D6A4F',
+        routeDim: '#95D5B2',
       };
 
       // Expressions for country styling
@@ -455,7 +457,7 @@
           source: 'countries',
           'source-layer': 'country_boundaries',
           paint: {
-            'line-color': '#1f2937',
+            'line-color': '#a8b5ab',
             'line-width': 0.5,
           },
         });
@@ -511,8 +513,8 @@
           source: 'home',
           paint: {
             'circle-radius': 8,
-            'circle-color': '#f97316',
-            'circle-stroke-color': '#fdba74',
+            'circle-color': '#1B4332',
+            'circle-stroke-color': '#52B788',
             'circle-stroke-width': 3,
           },
         });
@@ -524,7 +526,7 @@
           paint: {
             'circle-radius': 20,
             'circle-color': 'transparent',
-            'circle-stroke-color': '#f97316',
+            'circle-stroke-color': '#2D6A4F',
             'circle-stroke-width': 2,
             'circle-opacity': 0.4,
           },
