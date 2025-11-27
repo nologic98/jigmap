@@ -1,0 +1,434 @@
+[
+  {
+    "city": "Miami Beach",
+    "country": "United States",
+    "state": "Florida",
+    "date": "2022-03-01",
+    "days": 3,
+    "photos": 4
+  },
+  {
+    "city": "Las Vegas",
+    "country": "United States",
+    "state": "Nevada",
+    "date": "2022-08-12",
+    "days": 4,
+    "photos": 40
+  },
+  {
+    "city": "East Windsor",
+    "country": "United States",
+    "state": "New Jersey",
+    "date": "2022-10-12",
+    "days": 3,
+    "photos": 23
+  },
+  {
+    "city": "Lawrence Township",
+    "country": "United States",
+    "state": "New Jersey",
+    "date": "2022-10-14",
+    "days": 2,
+    "photos": 20
+  },
+  {
+    "city": "New York",
+    "country": "United States",
+    "state": "New York",
+    "date": "2022-10-16",
+    "days": 2,
+    "photos": 19
+  },
+  {
+    "city": "Kennedale",
+    "country": "United States",
+    "state": "Texas",
+    "date": "2023-01-12",
+    "days": 2,
+    "photos": 12
+  },
+  {
+    "city": "Fort Worth",
+    "country": "United States",
+    "state": "Texas",
+    "date": "2023-01-13",
+    "days": 2,
+    "photos": 28
+  },
+  {
+    "city": "Park City",
+    "country": "United States",
+    "state": "Utah",
+    "date": "2023-01-25",
+    "days": 3,
+    "photos": 25
+  },
+  {
+    "city": "Salt Lake City",
+    "country": "United States",
+    "state": "Utah",
+    "date": "2023-01-29",
+    "days": 2,
+    "photos": 21
+  },
+  {
+    "city": "Salt Lake City",
+    "country": "United States",
+    "state": "Utah",
+    "date": "2023-01-30",
+    "days": 2,
+    "photos": 14
+  },
+  {
+    "city": "Kansas City",
+    "country": "United States",
+    "state": "Missouri",
+    "date": "2023-04-09",
+    "days": 3,
+    "photos": 53
+  },
+  {
+    "city": "Kirkjubæjarklaustur",
+    "country": "Iceland",
+    "state": "Skaftárhreppur",
+    "date": "2023-07-25",
+    "days": 2,
+    "photos": 10
+  },
+  {
+    "city": "Châteauneuf-Grasse",
+    "country": "France",
+    "state": "Provence-Alpes-Côte d'Azur",
+    "date": "2023-07-30",
+    "days": 2,
+    "photos": 3
+  },
+  {
+    "city": "München",
+    "country": "Germany",
+    "state": "Bayern",
+    "date": "2023-12-26",
+    "days": 2,
+    "photos": 49
+  },
+  {
+    "city": "Kronberg im Taunus",
+    "country": "Germany",
+    "state": "Hessen",
+    "date": "2023-12-30",
+    "days": 2,
+    "photos": 56
+  },
+  {
+    "city": "Frankfurt am Main",
+    "country": "Germany",
+    "state": "Hessen",
+    "date": "2023-12-31",
+    "days": 2,
+    "photos": 95
+  },
+  {
+    "city": "Paris",
+    "country": "France",
+    "state": "Île-de-France",
+    "date": "2024-01-01",
+    "days": 5,
+    "photos": 108
+  },
+  {
+    "city": "Oud-Turnhout",
+    "country": "Belgium",
+    "state": "Vlaanderen",
+    "date": "2024-01-05",
+    "days": 5,
+    "photos": 13
+  },
+  {
+    "city": "Park City",
+    "country": "United States",
+    "state": "Utah",
+    "date": "2024-01-22",
+    "days": 4,
+    "photos": 77
+  },
+  {
+    "city": "Park City",
+    "country": "United States",
+    "state": "Utah",
+    "date": "2024-01-26",
+    "days": 3,
+    "photos": 38
+  },
+  {
+    "city": "Miami",
+    "country": "United States",
+    "state": "Florida",
+    "date": "2024-03-13",
+    "days": 2,
+    "photos": 4
+  },
+  {
+    "city": "Naples",
+    "country": "United States",
+    "state": "Florida",
+    "date": "2024-03-15",
+    "days": 3,
+    "photos": 16
+  },
+  {
+    "city": "Miami Beach",
+    "country": "United States",
+    "state": "Florida",
+    "date": "2024-03-18",
+    "days": 2,
+    "photos": 26
+  },
+  {
+    "city": "Fort Worth",
+    "country": "United States",
+    "state": "Texas",
+    "date": "2024-04-07",
+    "days": 2,
+    "photos": 44
+  },
+  {
+    "city": "Vancouver",
+    "country": "Canada",
+    "state": "British Columbia",
+    "date": "2024-04-14",
+    "days": 6,
+    "photos": 55
+  },
+  {
+    "city": "Fire Island",
+    "country": "United States",
+    "state": "New York",
+    "date": "2024-07-05",
+    "days": 2,
+    "photos": 45
+  },
+  {
+    "city": "New York",
+    "country": "United States",
+    "state": "New York",
+    "date": "2024-07-08",
+    "days": 3,
+    "photos": 54
+  },
+  {
+    "city": "West Windsor Township",
+    "country": "United States",
+    "state": "New Jersey",
+    "date": "2024-07-11",
+    "days": 2,
+    "photos": 16
+  },
+  {
+    "city": "East Windsor",
+    "country": "United States",
+    "state": "New Jersey",
+    "date": "2024-07-12",
+    "days": 2,
+    "photos": 16
+  },
+  {
+    "city": "Park City",
+    "country": "United States",
+    "state": "Utah",
+    "date": "2024-08-02",
+    "days": 5,
+    "photos": 27
+  },
+  {
+    "city": "Barcelona",
+    "country": "Spain",
+    "state": "Catalonia",
+    "date": "2024-08-18",
+    "days": 3,
+    "photos": 68
+  },
+  {
+    "city": "Ormos Firon",
+    "country": "Greece",
+    "state": null,
+    "date": "2024-09-01",
+    "days": 2,
+    "photos": 6
+  },
+  {
+    "city": "Madrid",
+    "country": "Spain",
+    "state": "Comunidad de Madrid",
+    "date": "2024-09-02",
+    "days": 2,
+    "photos": 19
+  },
+  {
+    "city": "East Windsor",
+    "country": "United States",
+    "state": "New Jersey",
+    "date": "2024-09-13",
+    "days": 2,
+    "photos": 2
+  },
+  {
+    "city": "Seaside Heights",
+    "country": "United States",
+    "state": "New Jersey",
+    "date": "2024-09-14",
+    "days": 2,
+    "photos": 90
+  },
+  {
+    "city": "New York",
+    "country": "United States",
+    "state": "New York",
+    "date": "2024-09-17",
+    "days": 2,
+    "photos": 19
+  },
+  {
+    "city": "Sunriver",
+    "country": "United States",
+    "state": "Oregon",
+    "date": "2024-09-20",
+    "days": 2,
+    "photos": 35
+  },
+  {
+    "city": "Waimea",
+    "country": "United States",
+    "state": "Hawaii",
+    "date": "2024-10-17",
+    "days": 2,
+    "photos": 20
+  },
+  {
+    "city": "Park City",
+    "country": "United States",
+    "state": "Utah",
+    "date": "2025-01-27",
+    "days": 7,
+    "photos": 28
+  },
+  {
+    "city": "New York",
+    "country": "United States",
+    "state": "New York",
+    "date": "2025-02-22",
+    "days": 2,
+    "photos": 29
+  },
+  {
+    "city": "East Windsor",
+    "country": "United States",
+    "state": "New Jersey",
+    "date": "2025-02-24",
+    "days": 2,
+    "photos": 29
+  },
+  {
+    "city": "New York",
+    "country": "United States",
+    "state": "New York",
+    "date": "2025-02-27",
+    "days": 2,
+    "photos": 61
+  },
+  {
+    "city": "Park City",
+    "country": "United States",
+    "state": "Utah",
+    "date": "2025-03-14",
+    "days": 2,
+    "photos": 17
+  },
+  {
+    "city": "Vancouver",
+    "country": "Canada",
+    "state": "British Columbia",
+    "date": "2025-04-07",
+    "days": 4,
+    "photos": 21
+  },
+  {
+    "city": "Fire Island",
+    "country": "United States",
+    "state": "New York",
+    "date": "2025-07-02",
+    "days": 3,
+    "photos": 27
+  },
+  {
+    "city": "Hopewell Township",
+    "country": "United States",
+    "state": "New Jersey",
+    "date": "2025-07-05",
+    "days": 2,
+    "photos": 7
+  },
+  {
+    "city": "East Windsor",
+    "country": "United States",
+    "state": "New Jersey",
+    "date": "2025-07-08",
+    "days": 2,
+    "photos": 14
+  },
+  {
+    "city": "Salt Lake City",
+    "country": "United States",
+    "state": "Utah",
+    "date": "2025-07-26",
+    "days": 3,
+    "photos": 11
+  },
+  {
+    "city": "Seattle",
+    "country": "United States",
+    "state": "Washington",
+    "date": "2025-08-02",
+    "days": 2,
+    "photos": 18
+  },
+  {
+    "city": "Mikonos",
+    "country": "Greece",
+    "state": null,
+    "date": "2025-08-15",
+    "days": 2,
+    "photos": 16
+  },
+  {
+    "city": "Philadelphia",
+    "country": "United States",
+    "state": "Pennsylvania",
+    "date": "2025-09-18",
+    "days": 2,
+    "photos": 10
+  },
+  {
+    "city": "East Windsor",
+    "country": "United States",
+    "state": "New Jersey",
+    "date": "2025-09-19",
+    "days": 3,
+    "photos": 12
+  },
+  {
+    "city": "West Windsor Township",
+    "country": "United States",
+    "state": "New Jersey",
+    "date": "2025-09-21",
+    "days": 2,
+    "photos": 8
+  },
+  {
+    "city": "East Windsor",
+    "country": "United States",
+    "state": "New Jersey",
+    "date": "2025-09-22",
+    "days": 2,
+    "photos": 9
+  }
+]

@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Travel Timeline</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <link
+      href="https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.css"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      }
+      body { margin: 0; padding: 0; background: #f8faf8; color: #1B4332; overflow: hidden; }
+      #map { position: absolute; top: 36px; bottom: 60px; width: 100%; }
+      .mapboxgl-ctrl-logo, .mapboxgl-ctrl-attrib { display: none !important; }
+
+      /* Nav header */
+      .nav-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 36px;
+        background: #ffffff;
+        border-bottom: 1px solid #e2e8e4;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 12px;
+        z-index: 100;
+        font-size: 12px;
+      }
+      .nav-brand {
+        color: #1B4332;
+        font-weight: 600;
+      }
+      .nav-links {
+        display: flex;
+        gap: 4px;
+      }
+      .nav-links a {
+        padding: 4px 10px;
+        border-radius: 4px;
+        text-decoration: none;
+        color: #5c7c6a;
+        transition: color 0.15s, background 0.15s;
+      }
+      .nav-links a:hover {
+        color: #1B4332;
+        background: rgba(27, 67, 50, 0.08);
+      }
+      .nav-links a.active {
+        color: #1B4332;
+        font-weight: 600;
+      }
+
+      /* Timeline bar at bottom */
+      .timeline-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 60px;
+        background: rgba(255, 255, 255, 0.95);
+        border-top: 1px solid #e2e8e4;
+        display: flex;
+        flex-direction: column;
+        padding: 8px 16px;
+        z-index: 100;
+      }
+      .timeline-controls {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 6px;
+      }
+      .timeline-controls button {
+        padding: 4px 12px;
+        border-radius: 6px;
+        border: 1px solid #d1d9d4;
+        background: #ffffff;
+        color: #1B4332;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .timeline-controls button:hover {
+        background: rgba(45, 106, 79, 0.1);
+        border-color: #2D6A4F;
+      }
+      .timeline-controls button.active {
+        background: rgba(45, 106, 79, 0.15);
+        border-color: #2D6A4F;
+        color: #2D6A4F;
+      }
+      .timeline-date {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1B4332;
+        min-width: 100px;
+      }
+      .timeline-stats {
+        font-size: 11px;
+        color: #5c7c6a;
+        margin-left: auto;
+      }
+      .timeline-progress {
+        height: 6px;
+        background: #e8ede9;
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .timeline-progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #2D6A4F, #52B788);
+        border-radius: 3px;
+        width: 0%;
+        transition: width 0.3s ease;
+      }
+
+      /* Scrolling credits */
+      .credits-container {
+        position: fixed;
+        right: 16px;
+        top: 50px;
+        bottom: 74px;
+        width: 200px;
+        overflow: hidden;
+        pointer-events: none;
+        z-index: 50;
+      }
+      .credits-scroll {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .credit-item {
+        padding: 6px 10px;
+        background: rgba(255, 255, 255, 0.85);
+        border-radius: 6px;
+        font-size: 11px;
+        color: #1B4332;
+        opacity: 0;
+        transform: translateY(20px);
+        animation: creditFadeIn 0.5s ease forwards;
+      }
+      .credit-item.fading {
+        animation: creditFadeOut 0.5s ease forwards;
+      }
+      .credit-city {
+        font-weight: 600;
+        font-size: 12px;
+      }
+      .credit-meta {
+        color: #5c7c6a;
+        font-size: 10px;
+      }
+      @keyframes creditFadeIn {
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes creditFadeOut {
+        to { opacity: 0; transform: translateY(-20px); }
+      }
+
+      /* Current location callout */
+      .current-location {
+        position: fixed;
+        left: 16px;
+        top: 50px;
+        background: rgba(255, 255, 255, 0.95);
+        border: 1px solid #e2e8e4;
+        border-radius: 10px;
+        padding: 12px 16px;
+        z-index: 50;
+        max-width: 250px;
+        box-shadow: 0 4px 12px rgba(27, 67, 50, 0.1);
+      }
+      .current-location-city {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1B4332;
+      }
+      .current-location-region {
+        font-size: 12px;
+        color: #5c7c6a;
+        margin-top: 2px;
+      }
+      .current-location-date {
+        font-size: 11px;
+        color: #2D6A4F;
+        margin-top: 6px;
+        font-weight: 500;
+      }
+
+      @media (max-width: 480px) {
+        .credits-container { display: none; }
+        .current-location { max-width: 180px; padding: 8px 12px; }
+        .current-location-city { font-size: 14px; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="nav-header">
+      <div class="nav-brand">TalkTravel Maps</div>
+      <nav class="nav-links">
+        <a href="jigsaw.html">Jigsaw</a>
+        <a href="routes.html">Routes</a>
+        <a href="discover.html">Discover</a>
+        <a href="timeline.html" class="active">Timeline</a>
+      </nav>
+    </header>
+
+    <div id="map"></div>
+
+    <div class="current-location" id="current-location">
+      <div class="current-location-city" id="loc-city">Loading...</div>
+      <div class="current-location-region" id="loc-region"></div>
+      <div class="current-location-date" id="loc-date"></div>
+    </div>
+
+    <div class="credits-container">
+      <div class="credits-scroll" id="credits-scroll"></div>
+    </div>
+
+    <div class="timeline-bar">
+      <div class="timeline-controls">
+        <button id="btn-play">Play</button>
+        <button id="btn-speed">1x</button>
+        <div class="timeline-date" id="timeline-date">--</div>
+        <div class="timeline-stats" id="timeline-stats">0 places • 0 countries</div>
+      </div>
+      <div class="timeline-progress">
+        <div class="timeline-progress-fill" id="progress-fill"></div>
+      </div>
+    </div>
+
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
+    <script>
+      mapboxgl.accessToken = 'pk.eyJ1IjoiZGttaWNoYWVscyIsImEiOiJjbWlnczV6bnQwYjlxM2Nvb2U2YjNseWxoIn0.bG5oBDdzT3coIAlUDk8fxA';
+
+      // Country name to ISO mapping
+      const countryToISO = {
+        'United States': 'USA',
+        'Canada': 'CAN',
+        'Mexico': 'MEX',
+        'United Kingdom': 'GBR',
+        'France': 'FRA',
+        'Germany': 'DEU',
+        'Spain': 'ESP',
+        'Italy': 'ITA',
+        'Netherlands': 'NLD',
+        'Belgium': 'BEL',
+        'Iceland': 'ISL',
+        'Greece': 'GRC',
+        'Portugal': 'PRT',
+        'Switzerland': 'CHE',
+        'Austria': 'AUT',
+        'Japan': 'JPN',
+        'Australia': 'AUS',
+        'New Zealand': 'NZL',
+      };
+
+      // Country centroids for routes
+      const countryCentroids = {
+        USA: { lon: -122.419, lat: 37.775 }, // SF as home
+        CAN: { lon: -123.1, lat: 49.3 },
+        GBR: { lon: -0.1, lat: 51.5 },
+        FRA: { lon: 2.3, lat: 48.9 },
+        DEU: { lon: 10.5, lat: 51.2 },
+        ESP: { lon: -3.7, lat: 40.4 },
+        ITA: { lon: 12.5, lat: 41.9 },
+        NLD: { lon: 4.9, lat: 52.4 },
+        BEL: { lon: 4.4, lat: 50.8 },
+        ISL: { lon: -18.1, lat: 64.1 },
+        GRC: { lon: 23.7, lat: 37.98 },
+      };
+
+      // US State and region centroids for camera positioning
+      const stateCentroids = {
+        'California': { lon: -119.4, lat: 36.8 },
+        'Florida': { lon: -81.5, lat: 27.6 },
+        'Nevada': { lon: -115.1, lat: 36.2 },
+        'New Jersey': { lon: -74.4, lat: 40.1 },
+        'New York': { lon: -74.0, lat: 40.7 },
+        'Texas': { lon: -97.3, lat: 32.7 },
+        'Utah': { lon: -111.5, lat: 40.6 },
+        'Missouri': { lon: -94.6, lat: 39.1 },
+        'Oregon': { lon: -121.8, lat: 44.0 },
+        'Hawaii': { lon: -155.5, lat: 19.9 },
+        'Washington': { lon: -122.3, lat: 47.6 },
+        'Pennsylvania': { lon: -75.2, lat: 40.0 },
+        'British Columbia': { lon: -123.1, lat: 49.3 },
+        // European regions
+        'Bayern': { lon: 11.6, lat: 48.1 },
+        'Hessen': { lon: 8.7, lat: 50.1 },
+        'Île-de-France': { lon: 2.3, lat: 48.9 },
+        'Provence-Alpes-Côte d\'Azur': { lon: 7.0, lat: 43.7 },
+        'Vlaanderen': { lon: 4.4, lat: 51.0 },
+        'Catalonia': { lon: 2.2, lat: 41.4 },
+        'Comunidad de Madrid': { lon: -3.7, lat: 40.4 },
+        'Skaftárhreppur': { lon: -18.1, lat: 64.0 },
+      };
+
+      const HOME = { lon: -122.419, lat: 37.775 };
+      const COUNTRY_PROP = 'iso_3166_1_alpha_3';
+
+      // Palette
+      const palette = {
+        active: '#2D6A4F',
+        accent: '#40916C',
+        neutral: '#d8e2dc',
+        border: '#b7c9bc',
+        glow: '#52B788',
+        route: '#2D6A4F',
+        routeDim: '#95D5B2',
+      };
+
+      // State
+      let timelineData = [];
+      let currentIndex = 0;
+      let isPlaying = false;
+      let playSpeed = 1;
+      let playInterval = null;
+      let discovered = new Set(['USA']);
+      let routes = [];
+      let lastCountry = 'USA';
+      let visitedPlaces = 0;
+
+      const isMobile = window.innerWidth <= 480;
+
+      const map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/light-v11',
+        center: [HOME.lon, HOME.lat],
+        zoom: isMobile ? 3 : 4,
+      });
+
+      // Expressions
+      const highlightCondition = () => ['in', ['get', COUNTRY_PROP], ['literal', Array.from(discovered)]];
+      const makeFillColor = () => ['case', highlightCondition(), palette.active, palette.neutral];
+      const makeFillOpacity = () => ['case', highlightCondition(), 0.85, 0.3];
+      const makeOutline = () => ['case', highlightCondition(), palette.accent, palette.border];
+      const makeGlow = () => ['case', highlightCondition(), palette.glow, 'rgba(0,0,0,0)'];
+
+      function refreshCountryStyling() {
+        if (!map.getLayer('country-fills')) return;
+        map.setPaintProperty('country-fills', 'fill-color', makeFillColor());
+        map.setPaintProperty('country-fills', 'fill-opacity', makeFillOpacity());
+        map.setPaintProperty('country-fills', 'fill-outline-color', makeOutline());
+        map.setPaintProperty('country-glow', 'line-color', makeGlow());
+      }
+
+      function buildRoutesGeoJSON() {
+        return {
+          type: 'FeatureCollection',
+          features: routes.map((r, i) => ({
+            type: 'Feature',
+            geometry: turf.greatCircle([r.from.lon, r.from.lat], [r.to.lon, r.to.lat], { npoints: 50 }).geometry,
+            properties: { index: i },
+          })),
+        };
+      }
+
+      function buildDestinationsGeoJSON() {
+        const features = [];
+        discovered.forEach(iso => {
+          if (iso === 'USA') return;
+          const c = countryCentroids[iso];
+          if (c) features.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [c.lon, c.lat] }, properties: { iso } });
+        });
+        return { type: 'FeatureCollection', features };
+      }
+
+      function formatDate(dateStr) {
+        const d = new Date(dateStr + 'T12:00:00');
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      }
+
+      function updateUI(entry) {
+        document.getElementById('loc-city').textContent = entry.city;
+        document.getElementById('loc-region').textContent = `${entry.state || ''}, ${entry.country}`.replace(/^, /, '');
+        document.getElementById('loc-date').textContent = formatDate(entry.date);
+        document.getElementById('timeline-date').textContent = formatDate(entry.date);
+        document.getElementById('timeline-stats').textContent = `${visitedPlaces} places • ${discovered.size} countries`;
+
+        const progress = ((currentIndex + 1) / timelineData.length) * 100;
+        document.getElementById('progress-fill').style.width = progress + '%';
+
+        // Add credit
+        addCredit(entry);
+      }
+
+      const creditItems = [];
+      function addCredit(entry) {
+        const container = document.getElementById('credits-scroll');
+        const div = document.createElement('div');
+        div.className = 'credit-item';
+        div.innerHTML = `
+          <div class="credit-city">${entry.city}</div>
+          <div class="credit-meta">${formatDate(entry.date)} • ${entry.photos} photos</div>
+        `;
+        container.insertBefore(div, container.firstChild);
+        creditItems.unshift(div);
+
+        // Keep only last 8 credits
+        while (creditItems.length > 8) {
+          const old = creditItems.pop();
+          old.classList.add('fading');
+          setTimeout(() => old.remove(), 500);
+        }
+      }
+
+      function processEntry(entry) {
+        visitedPlaces++;
+        const iso = countryToISO[entry.country];
+
+        if (iso && !discovered.has(iso)) {
+          // New country!
+          discovered.add(iso);
+
+          // Add route from last country
+          const fromC = countryCentroids[lastCountry];
+          const toC = countryCentroids[iso];
+          if (fromC && toC) {
+            routes.push({ from: fromC, to: toC });
+            map.getSource('routes')?.setData(buildRoutesGeoJSON());
+          }
+
+          // Update destinations
+          map.getSource('destinations')?.setData(buildDestinationsGeoJSON());
+
+          lastCountry = iso;
+          refreshCountryStyling();
+        }
+
+        // Always fly to the current location (state/region level)
+        const stateCoords = stateCentroids[entry.state];
+        if (stateCoords) {
+          // Use state/region centroid for precise positioning
+          const zoom = entry.country === 'United States' ? 6 : 5;
+          map.flyTo({ center: [stateCoords.lon, stateCoords.lat], zoom: zoom, duration: 800 });
+        } else if (iso && countryCentroids[iso]) {
+          // Fallback to country centroid
+          map.flyTo({ center: [countryCentroids[iso].lon, countryCentroids[iso].lat], zoom: 5, duration: 800 });
+        }
+
+        updateUI(entry);
+      }
+
+      function playNext() {
+        if (currentIndex >= timelineData.length) {
+          stopPlayback();
+          return;
+        }
+
+        const entry = timelineData[currentIndex];
+        processEntry(entry);
+        currentIndex++;
+      }
+
+      function startPlayback() {
+        if (isPlaying) return;
+        isPlaying = true;
+        document.getElementById('btn-play').textContent = 'Pause';
+        document.getElementById('btn-play').classList.add('active');
+
+        const baseDelay = 1200; // Allow time for camera animation
+        const delay = baseDelay / playSpeed;
+
+        playInterval = setInterval(playNext, delay);
+      }
+
+      function stopPlayback() {
+        isPlaying = false;
+        document.getElementById('btn-play').textContent = 'Play';
+        document.getElementById('btn-play').classList.remove('active');
+        if (playInterval) {
+          clearInterval(playInterval);
+          playInterval = null;
+        }
+      }
+
+      function togglePlayback() {
+        if (isPlaying) stopPlayback();
+        else startPlayback();
+      }
+
+      function cycleSpeed() {
+        const speeds = [1, 2, 4, 8];
+        const idx = speeds.indexOf(playSpeed);
+        playSpeed = speeds[(idx + 1) % speeds.length];
+        document.getElementById('btn-speed').textContent = playSpeed + 'x';
+
+        if (isPlaying) {
+          stopPlayback();
+          startPlayback();
+        }
+      }
+
+      function reset() {
+        stopPlayback();
+        currentIndex = 0;
+        discovered = new Set(['USA']);
+        routes = [];
+        lastCountry = 'USA';
+        visitedPlaces = 0;
+        creditItems.forEach(c => c.remove());
+        creditItems.length = 0;
+
+        map.getSource('routes')?.setData({ type: 'FeatureCollection', features: [] });
+        map.getSource('destinations')?.setData({ type: 'FeatureCollection', features: [] });
+        refreshCountryStyling();
+
+        document.getElementById('progress-fill').style.width = '0%';
+        document.getElementById('timeline-date').textContent = '--';
+        document.getElementById('loc-city').textContent = 'Ready';
+        document.getElementById('loc-region').textContent = '';
+        document.getElementById('loc-date').textContent = '';
+
+        map.flyTo({ center: [HOME.lon, HOME.lat], zoom: isMobile ? 3 : 4, duration: 1000 });
+      }
+
+      // Load timeline data
+      fetch('timeline-data.json')
+        .then(r => r.json())
+        .then(data => {
+          timelineData = data;
+          document.getElementById('loc-city').textContent = 'Ready';
+          document.getElementById('loc-region').textContent = `${data.length} places to explore`;
+        })
+        .catch(err => {
+          console.error('Failed to load timeline:', err);
+          document.getElementById('loc-city').textContent = 'Error loading data';
+        });
+
+      // Initialize map
+      map.on('load', () => {
+        map.addSource('countries', { type: 'vector', url: 'mapbox://mapbox.country-boundaries-v1' });
+
+        map.addLayer({
+          id: 'country-fills', type: 'fill', source: 'countries', 'source-layer': 'country_boundaries',
+          paint: { 'fill-color': makeFillColor(), 'fill-opacity': makeFillOpacity(), 'fill-outline-color': makeOutline() },
+        });
+
+        map.addLayer({
+          id: 'country-borders', type: 'line', source: 'countries', 'source-layer': 'country_boundaries',
+          paint: { 'line-color': '#a8b5ab', 'line-width': 0.5 },
+        });
+
+        map.addLayer({
+          id: 'country-glow', type: 'line', source: 'countries', 'source-layer': 'country_boundaries',
+          paint: { 'line-color': makeGlow(), 'line-width': 4, 'line-blur': 2, 'line-opacity': 0.35 },
+        });
+
+        map.addSource('routes', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+        map.addLayer({
+          id: 'route-lines', type: 'line', source: 'routes',
+          paint: { 'line-color': palette.route, 'line-width': 2, 'line-opacity': 0.8, 'line-dasharray': [2, 1.5] },
+          layout: { 'line-cap': 'round', 'line-join': 'round' },
+        });
+
+        map.addSource('destinations', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+        map.addLayer({
+          id: 'destination-points', type: 'circle', source: 'destinations',
+          paint: { 'circle-radius': 6, 'circle-color': palette.active, 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 },
+        });
+
+        // Home marker
+        map.addSource('home', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'Point', coordinates: [HOME.lon, HOME.lat] } } });
+        map.addLayer({
+          id: 'home-point', type: 'circle', source: 'home',
+          paint: { 'circle-radius': 8, 'circle-color': '#1B4332', 'circle-stroke-color': '#52B788', 'circle-stroke-width': 3 },
+        });
+      });
+
+      // Event handlers
+      document.getElementById('btn-play').addEventListener('click', togglePlayback);
+      document.getElementById('btn-speed').addEventListener('click', cycleSpeed);
+    </script>
+  </body>
+</html>

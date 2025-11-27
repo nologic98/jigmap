@@ -132,6 +132,7 @@
         <a href="jigsaw.html">Jigsaw</a>
         <a href="routes.html">Routes</a>
         <a href="discover.html" class="active">Discover</a>
+        <a href="timeline.html">Timeline</a>
       </nav>
     </header>
     <div id="map"></div>
@@ -201,13 +202,14 @@
         ISL: { lon: -19.0, lat: 65.0 },
         HRV: { lon: 15.2, lat: 45.1 },
         HUN: { lon: 19.5, lat: 47.2 },
+        BEL: { lon: 4.5, lat: 50.5 },
       };
 
       // Regional groupings for branching routes
       const regions = {
         northAmerica: ['USA', 'CAN', 'MEX'],
         southAmerica: ['BRA', 'ARG', 'CHL', 'COL', 'PER'],
-        westernEurope: ['GBR', 'FRA', 'ESP', 'PRT', 'IRL', 'NLD', 'DEU', 'CHE', 'AUT'],
+        westernEurope: ['GBR', 'FRA', 'ESP', 'PRT', 'IRL', 'NLD', 'DEU', 'CHE', 'AUT', 'BEL'],
         southernEurope: ['ITA', 'GRC', 'HRV'],
         northernEurope: ['SWE', 'NOR', 'DNK', 'FIN', 'ISL'],
         easternEurope: ['POL', 'CZE', 'HUN', 'TUR'],
@@ -228,43 +230,22 @@
       // Track regional hubs (first visited country in each region)
       let regionalHubs = {};
 
-      // Simulation with regional branching - each entry is { country, fromRegional: bool }
-      // First country in a region comes from home, subsequent ones branch from previous
+      // Real travel data from photo GPS history
+      // Simulation with regional branching - each entry is { country, fromPrev: bool }
       const simulationTrips = [
-        // Trip 1: Mexico quick trip
-        { country: 'MEX', fromHome: true },
-        // Trip 2: South America adventure
-        { country: 'BRA', fromHome: true },
-        { country: 'ARG', fromPrev: true },
-        { country: 'CHL', fromPrev: true },
-        // Trip 3: Western Europe
-        { country: 'GBR', fromHome: true },
-        { country: 'FRA', fromPrev: true },
-        { country: 'ESP', fromPrev: true },
-        { country: 'PRT', fromPrev: true },
-        // Trip 4: Central/Southern Europe
-        { country: 'ITA', fromHome: true },
-        { country: 'CHE', fromPrev: true },
-        { country: 'AUT', fromPrev: true },
-        { country: 'HRV', fromPrev: true },
-        { country: 'GRC', fromPrev: true },
-        // Trip 5: Southeast Asia
-        { country: 'THA', fromHome: true },
-        { country: 'VNM', fromPrev: true },
-        { country: 'SGP', fromPrev: true },
-        { country: 'IDN', fromPrev: true },
-        // Trip 6: East Asia
-        { country: 'JPN', fromHome: true },
-        { country: 'KOR', fromPrev: true },
-        { country: 'CHN', fromPrev: true },
-        // Trip 7: Oceania
-        { country: 'AUS', fromHome: true },
-        { country: 'NZL', fromPrev: true },
-        // Trip 8: Middle East & Africa
-        { country: 'ARE', fromHome: true },
-        { country: 'EGY', fromPrev: true },
-        { country: 'KEN', fromPrev: true },
-        { country: 'ZAF', fromPrev: true },
+        // Trip 1: Summer 2023 - Iceland & Europe
+        { country: 'NLD', fromHome: true },   // Amsterdam layover July 21
+        { country: 'ISL', fromPrev: true },   // Iceland July 21-27
+        { country: 'FRA', fromPrev: true },   // France July 27
+        { country: 'GBR', fromPrev: true },   // UK August 1
+        // Trip 2: Winter 2023-24 - Germany & Belgium
+        { country: 'DEU', fromHome: true },   // Germany Dec 26
+        { country: 'BEL', fromPrev: true },   // Belgium Jan 5-9
+        // Trip 3: Spring 2024 - Canada
+        { country: 'CAN', fromHome: true },   // Canada April
+        // Trip 4: Summer 2024 - Mediterranean
+        { country: 'ESP', fromHome: true },   // Spain Aug 18
+        { country: 'GRC', fromPrev: true },   // Greece Aug 23
       ];
 
       const COUNTRY_PROP = 'iso_3166_1_alpha_3';
