@@ -328,6 +328,19 @@
         'Skaftárhreppur': { lon: -18.1, lat: 64.0 },
       };
 
+      // Mapping from timeline region names to Natural Earth admin-1 names
+      const regionNameMapping = {
+        'Bayern': 'Bayern',
+        'Hessen': 'Hessen',
+        'Île-de-France': 'Île-de-France',
+        'Provence-Alpes-Côte d\'Azur': 'Provence-Alpes-Côte d\'Azur',
+        'Vlaanderen': 'Vlaams Gewest',
+        'Catalonia': 'Cataluña',
+        'Comunidad de Madrid': 'Comunidad de Madrid',
+        'Skaftárhreppur': 'Suðurland',
+        'British Columbia': 'British Columbia',
+      };
+
       const HOME = { lon: -122.419, lat: 37.775 };
       const COUNTRY_PROP = 'iso_3166_1_alpha_3';
 
@@ -369,6 +382,9 @@
 
       // US States GeoJSON (will be loaded)
       let usStatesGeoJSON = null;
+
+      // World admin-1 (states/provinces) GeoJSON for foreign countries
+      let worldAdmin1GeoJSON = null;
 
       const isMobile = window.innerWidth <= 480;
 
@@ -545,26 +561,40 @@
         ];
       }
 
-      // Build GeoJSON for foreign region markers with intensity
+      // Build GeoJSON for foreign region fills with intensity
+      // Filters world admin-1 boundaries to only visited regions
       function buildForeignRegionsGeoJSON() {
+        if (!worldAdmin1GeoJSON) return { type: 'FeatureCollection', features: [] };
+
         const features = [];
 
+        // Build a set of visited region names (mapped to Natural Earth names)
+        const visitedRegionNames = new Map(); // NE name -> { visits, totalDays }
         foreignRegionVisits.forEach((visit, key) => {
           const [country, region] = key.split('::');
-          const coords = stateCentroids[region] || countryCentroids[countryToISO[country]];
+          // Map our region name to Natural Earth name
+          const neName = regionNameMapping[region] || region;
+          visitedRegionNames.set(neName, visit);
+        });
 
-          if (coords) {
+        // Filter world admin-1 to only visited regions
+        worldAdmin1GeoJSON.features.forEach(f => {
+          const regionName = f.properties.name;
+          const countryName = f.properties.admin;
+
+          // Skip USA - handled separately
+          if (countryName === 'United States of America') return;
+
+          // Check if this region was visited
+          const visit = visitedRegionNames.get(regionName);
+          if (visit) {
             const intensity = calculateIntensity(visit.visits, visit.totalDays);
             features.push({
-              type: 'Feature',
-              geometry: {
-                type: 'Point',
-                coordinates: [coords.lon, coords.lat],
-              },
+              ...f,
               properties: {
-                country,
-                region,
+                ...f.properties,
                 intensity,
+                visited: true,
                 visits: visit.visits,
                 totalDays: visit.totalDays,
               },
@@ -789,6 +819,16 @@
         }
       }
 
+      // Load World Admin-1 (states/provinces) GeoJSON for foreign countries
+      async function loadWorldAdmin1() {
+        try {
+          const response = await fetch('https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_1_states_provinces.geojson');
+          worldAdmin1GeoJSON = await response.json();
+        } catch (err) {
+          console.warn('Could not load world admin-1 GeoJSON:', err);
+        }
+      }
+
       // Load timeline data
       fetch('timeline-data.json')
         .then(r => r.json())
@@ -804,8 +844,8 @@
 
       // Initialize map
       map.on('load', async () => {
-        // Load US states first
-        await loadUSStates();
+        // Load boundary data in parallel
+        await Promise.all([loadUSStates(), loadWorldAdmin1()]);
 
         // Add country boundaries (for non-US countries)
         map.addSource('countries', { type: 'vector', url: 'mapbox://mapbox.country-boundaries-v1' });
@@ -887,7 +927,7 @@
           layout: { 'line-cap': 'round', 'line-join': 'round' },
         });
 
-        // Active (animating) route layer - brighter to show it's current
+        // Active (animating) route layer - brighter, dashed to match completed routes
         map.addSource('active-route', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
         map.addLayer({
           id: 'active-route-line',
@@ -897,33 +937,39 @@
             'line-color': '#52B788',
             'line-width': 3,
             'line-opacity': 1,
+            'line-dasharray': [2, 1.5],
           },
           layout: { 'line-cap': 'round', 'line-join': 'round' },
         });
 
-        // Foreign region markers - shows intensity for specific locations within countries
+        // Foreign region fills - shows intensity for specific regions within countries
         map.addSource('foreign-regions', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
         map.addLayer({
-          id: 'foreign-region-markers',
-          type: 'circle',
+          id: 'foreign-region-fills',
+          type: 'fill',
           source: 'foreign-regions',
           paint: {
-            'circle-radius': [
-              'interpolate', ['linear'], ['zoom'],
-              2, 6,
-              6, 12,
-            ],
-            'circle-color': [
+            'fill-color': [
               'case',
               ['==', ['get', 'intensity'], 4], palette.intensity[4],
               ['==', ['get', 'intensity'], 3], palette.intensity[3],
               ['==', ['get', 'intensity'], 2], palette.intensity[2],
               ['==', ['get', 'intensity'], 1], palette.intensity[1],
+              ['==', ['get', 'intensity'], 0], palette.intensity[0],
               palette.intensity[0],
             ],
-            'circle-stroke-color': '#ffffff',
-            'circle-stroke-width': 2,
-            'circle-opacity': 0.9,
+            'fill-opacity': 0.75,
+          },
+        });
+
+        // Foreign region borders
+        map.addLayer({
+          id: 'foreign-region-borders',
+          type: 'line',
+          source: 'foreign-regions',
+          paint: {
+            'line-color': '#40916C',
+            'line-width': 1,
           },
         });
 
