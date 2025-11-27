@@ -9,12 +9,165 @@
       rel="stylesheet"
     />
     <style>
-      body { margin: 0; padding: 0; background: #020617; }
+      :root {
+        font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      }
+      body { margin: 0; padding: 0; background: #020617; color: #e2e8f0; }
       #map { position: absolute; top: 0; bottom: 0; width: 100%; }
       .mapboxgl-ctrl-logo, .mapboxgl-ctrl-attrib { display: none !important; }
+      .ui-panel {
+        position: absolute;
+        top: 1.5rem;
+        left: 1.5rem;
+        width: 320px;
+        background: rgba(2, 6, 23, 0.78);
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 16px;
+        padding: 1.25rem;
+        backdrop-filter: blur(18px);
+        box-shadow: 0 20px 60px rgba(15, 23, 42, 0.55);
+        z-index: 5;
+      }
+      .panel-toggle {
+        display: none;
+        width: 100%;
+        background: rgba(244, 185, 141, 0.12);
+        color: #f4b98d;
+        border: 1px solid rgba(244, 185, 141, 0.4);
+        border-radius: 10px;
+        padding: 0.55rem 0.85rem;
+        font-size: 0.9rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        cursor: pointer;
+      }
+      .panel-toggle:focus {
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(244, 185, 141, 0.35);
+      }
+      .panel-body {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-top: 0.75rem;
+      }
+      .ui-panel.collapsed .panel-body {
+        display: none;
+      }
+      .ui-panel h2 {
+        margin: 0 0 0.75rem;
+        font-size: 1rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #94a3b8;
+      }
+      .hover-readout {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: #f8fafc;
+      }
+      .search-block {
+        margin-bottom: 0.25rem;
+      }
+      .search-block input {
+        width: 100%;
+        padding: 0.65rem 0.85rem;
+        border-radius: 10px;
+        border: 1px solid rgba(148, 163, 184, 0.35);
+        background: rgba(15, 23, 42, 0.65);
+        color: #f1f5f9;
+        font-size: 0.95rem;
+      }
+      .search-block input:focus {
+        outline: none;
+        border-color: #f4b98d;
+        box-shadow: 0 0 0 2px rgba(244, 185, 141, 0.25);
+      }
+      .suggestions {
+        display: none;
+        margin-top: 0.35rem;
+        max-height: 200px;
+        overflow-y: auto;
+        border-radius: 10px;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        background: rgba(15, 23, 42, 0.85);
+      }
+      .suggestion {
+        padding: 0.5rem 0.75rem;
+        cursor: pointer;
+        font-size: 0.9rem;
+        color: #e2e8f0;
+      }
+      .suggestion:hover {
+        background: rgba(244, 185, 141, 0.18);
+      }
+      .selection-block ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+      .selection-block li {
+        padding: 0.4rem 0;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+        font-size: 0.9rem;
+        color: #cbd5f5;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .selection-block li span {
+        color: #64748b;
+        font-size: 0.8rem;
+      }
+      .selection-block li:last-child {
+        border-bottom: none;
+      }
+      .empty-state {
+        font-size: 0.9rem;
+        color: #94a3b8;
+      }
+      @media (max-width: 768px) {
+        .ui-panel {
+          position: fixed;
+          top: auto;
+          left: 0.75rem;
+          right: 0.75rem;
+          bottom: 0.75rem;
+          width: auto;
+          max-height: 60vh;
+          border-radius: 20px;
+          padding: 0.85rem 1rem 1.25rem;
+          background: rgba(2, 6, 23, 0.9);
+          overflow-y: auto;
+        }
+        .panel-toggle {
+          display: block;
+        }
+      }
     </style>
   </head>
   <body>
+    <div class="ui-panel" id="ui-panel">
+      <button class="panel-toggle" id="panel-toggle" type="button" aria-controls="panel-body" aria-expanded="false">
+        <span class="toggle-label">Show map tools</span>
+      </button>
+      <div class="panel-body" id="panel-body">
+        <div class="hover-readout" id="hover-readout">Hover over a country</div>
+        <div class="search-block">
+          <input id="country-search" type="text" placeholder="Search country..." autocomplete="off" />
+          <div class="suggestions" id="search-suggestions"></div>
+        </div>
+        <div class="selection-block">
+          <h2>Selected Countries</h2>
+          <ul id="selection-list"></ul>
+        </div>
+      </div>
+    </div>
     <div id="map"></div>
 
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.js"></script>
@@ -29,6 +182,14 @@
         zoom: 1.4,
       });
 
+      const panelEl = document.getElementById('ui-panel');
+      const panelToggleEl = document.getElementById('panel-toggle');
+      const panelBodyEl = document.getElementById('panel-body');
+      const hoverReadoutEl = document.getElementById('hover-readout');
+      const selectionListEl = document.getElementById('selection-list');
+      const searchInputEl = document.getElementById('country-search');
+      const suggestionsEl = document.getElementById('search-suggestions');
+
       const philPalette = {
         active: '#f4b98d',
         accent: '#ffe7c2',
@@ -41,6 +202,14 @@
 
       // Click-to-toggle state (use alpha-3 codes to match source data)
       let highlighted = new Set(['USA', 'FRA', 'JPN', 'THA']);
+      let mapReady = false;
+      let hoveredFeatureId = null;
+      let countryDirectory = [];
+      const countryLookup = {};
+      const fallbackNames = {};
+      let currentSuggestions = [];
+      const mobileMedia = window.matchMedia('(max-width: 768px)');
+      let panelCollapsed = false;
 
       const highlightCondition = () => [
         'in',
@@ -83,13 +252,219 @@
         mapInstance.setPaintProperty('country-glow', 'line-color', makeGlowExpression());
       }
 
+      function setPanelCollapsed(collapsed) {
+        if (!panelEl) return;
+        panelCollapsed = collapsed;
+        panelEl.classList.toggle('collapsed', collapsed);
+        if (panelToggleEl) {
+          panelToggleEl.setAttribute('aria-expanded', (!collapsed).toString());
+          const label = panelToggleEl.querySelector('.toggle-label');
+          if (label) {
+            label.textContent = collapsed ? 'Show map tools' : 'Hide map tools';
+          }
+        }
+      }
+
+      function syncPanelMode() {
+        if (!panelEl) return;
+        if (mobileMedia.matches) {
+          setPanelCollapsed(true);
+        } else {
+          setPanelCollapsed(false);
+        }
+      }
+
+      function labelForIso(iso3) {
+        if (!iso3) return '';
+        return countryLookup[iso3]?.name || fallbackNames[iso3] || iso3;
+      }
+
+      function updateHoverReadout(label) {
+        hoverReadoutEl.textContent = label ? `Hovering: ${label}` : 'Hover over a country';
+      }
+
+      function renderSelectionList() {
+        if (!selectionListEl) return;
+        selectionListEl.innerHTML = '';
+
+        if (!highlighted.size) {
+          const empty = document.createElement('li');
+          empty.className = 'empty-state';
+          empty.textContent = 'Click countries to build your list.';
+          selectionListEl.appendChild(empty);
+          return;
+        }
+
+        const frag = document.createDocumentFragment();
+        Array.from(highlighted)
+          .map((iso) => ({ iso, name: labelForIso(iso) }))
+          .sort((a, b) => a.name.localeCompare(b.name))
+          .forEach(({ iso, name }) => {
+            const li = document.createElement('li');
+            li.innerHTML = `<strong>${name}</strong><span>${iso}</span>`;
+            frag.appendChild(li);
+          });
+        selectionListEl.appendChild(frag);
+      }
+
+      function hideSuggestions() {
+        if (!suggestionsEl) return;
+        suggestionsEl.style.display = 'none';
+        suggestionsEl.innerHTML = '';
+        currentSuggestions = [];
+      }
+
+      function showSuggestions(matches) {
+        if (!suggestionsEl) return;
+        if (!matches.length) {
+          hideSuggestions();
+          return;
+        }
+        suggestionsEl.style.display = 'block';
+        suggestionsEl.innerHTML = '';
+        matches.slice(0, 8).forEach((meta) => {
+          const option = document.createElement('div');
+          option.className = 'suggestion';
+          option.textContent = meta.name;
+          option.addEventListener('click', () => selectCountryFromSearch(meta));
+          suggestionsEl.appendChild(option);
+        });
+      }
+
+      function flashHoverOutline(mapInstance, iso3) {
+        if (!iso3) return;
+        const target = { source: 'countries', 'source-layer': 'country_boundaries', id: iso3 };
+        mapInstance.setFeatureState(target, { hover: true });
+        setTimeout(() => {
+          if (hoveredFeatureId !== iso3) {
+            mapInstance.setFeatureState(target, { hover: false });
+          }
+        }, 1200);
+      }
+
+      function focusCountryByIso(iso3, options = {}) {
+        if (!iso3) return;
+        if (!mapReady) return;
+        if (!highlighted.has(iso3)) {
+          highlighted.add(iso3);
+        }
+        refreshPhilStyling(map);
+        renderSelectionList();
+
+        const meta = countryLookup[iso3];
+        const targetCenter = options.center || meta?.center;
+        if (targetCenter) {
+          map.flyTo({
+            center: targetCenter,
+            zoom: Math.max(options.zoom || 3.2, map.getZoom()),
+            speed: 0.9,
+            curve: 1.6,
+            bearing: map.getBearing() + 360,
+            pitch: 0,
+            essential: true
+          });
+        }
+        flashHoverOutline(map, iso3);
+      }
+
+      function selectCountryFromSearch(meta) {
+        if (!meta) return;
+        hideSuggestions();
+        searchInputEl.value = '';
+        focusCountryByIso(meta.iso3, { center: meta.center, zoom: 4 });
+      }
+
+      function handleSearchInput(event) {
+        const value = event.target.value.trim().toLowerCase();
+        if (!value) {
+          hideSuggestions();
+          return;
+        }
+        currentSuggestions = countryDirectory.filter((meta) => meta.searchKey.includes(value));
+        showSuggestions(currentSuggestions);
+      }
+
+      async function hydrateCountryDirectory() {
+        try {
+          const response = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2,cca3,latlng');
+          const data = await response.json();
+          countryDirectory = data
+            .filter((entry) => entry.cca3)
+            .map((entry) => {
+              const latlng = Array.isArray(entry.latlng) && entry.latlng.length === 2 ? entry.latlng : [0, 0];
+              const meta = {
+                name: entry.name?.common || entry.cca3,
+                iso3: entry.cca3,
+                iso2: entry.cca2 || '',
+                center: [latlng[1], latlng[0]],
+                searchKey: (entry.name?.common || entry.cca3).toLowerCase()
+              };
+              countryLookup[meta.iso3] = meta;
+              return meta;
+            })
+            .sort((a, b) => a.name.localeCompare(b.name));
+          if (searchInputEl) {
+            searchInputEl.disabled = false;
+            searchInputEl.placeholder = 'Search country...';
+          }
+          renderSelectionList();
+        } catch (error) {
+          console.warn('Failed to hydrate country directory', error);
+        }
+      }
+
+      document.addEventListener('click', (event) => {
+        if (!event.target.closest('.search-block')) {
+          hideSuggestions();
+        }
+      });
+
+      if (searchInputEl) {
+        searchInputEl.disabled = true;
+        searchInputEl.placeholder = 'Loading countries...';
+        searchInputEl.addEventListener('input', handleSearchInput);
+        searchInputEl.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' && currentSuggestions.length) {
+            selectCountryFromSearch(currentSuggestions[0]);
+          }
+        });
+      }
+
+      if (panelToggleEl) {
+        panelToggleEl.addEventListener('click', () => {
+          setPanelCollapsed(!panelCollapsed);
+        });
+      }
+
+      mobileMedia.addEventListener('change', syncPanelMode);
+
+      syncPanelMode();
+      renderSelectionList();
+      hydrateCountryDirectory();
+
+      function polishLabels(mapInstance) {
+        const styleLayers = mapInstance.getStyle().layers || [];
+        styleLayers.forEach((layer) => {
+          if (layer.type !== 'symbol') return;
+          const hasText = layer.layout && layer.layout['text-field'];
+          if (!hasText) return;
+
+          mapInstance.setPaintProperty(layer.id, 'text-color', '#cdd6f4');
+          mapInstance.setPaintProperty(layer.id, 'text-halo-color', 'rgba(0,0,0,0)');
+          mapInstance.setPaintProperty(layer.id, 'text-halo-width', 0);
+          mapInstance.setPaintProperty(layer.id, 'text-halo-blur', 0);
+        });
+      }
+
       map.on('load', () => {
+        mapReady = true;
         // 2) ADD COUNTRY BOUNDARIES SOURCE
         // This uses Mapbox's country-boundaries tileset.
         // In your account, you may need to enable `mapbox.country-boundaries-v1`.
         map.addSource('countries', {
           type: 'vector',
-          url: 'mapbox://mapbox.country-boundaries-v1'
+          url: 'mapbox://mapbox.country-boundaries-v1',
+          promoteId: COUNTRY_PROP
         });
 
         // 3) ADD FILL LAYER (THE JIGSAW LOOK)
@@ -130,6 +505,27 @@
           }
         });
 
+        map.addLayer({
+          id: 'country-hover-outline',
+          type: 'line',
+          source: 'countries',
+          'source-layer': 'country_boundaries',
+          paint: {
+            'line-color': [
+              'case',
+              ['boolean', ['feature-state', 'hover'], false],
+              '#fde68a',
+              'rgba(0,0,0,0)'
+            ],
+            'line-width': 2.5,
+            'line-blur': 0,
+            'line-opacity': 0.9
+          }
+        });
+
+        // reduce blurry halos on default label layers
+        polishLabels(map);
+
         // 4) CLICK INTERACTION: TOGGLE HIGHLIGHTED COUNTRIES
         map.on('click', (e) => {
           const features = map.queryRenderedFeatures(e.point, { layers: ['country-fills'] });
@@ -138,6 +534,9 @@
 
           const iso = feature.properties[COUNTRY_PROP];
           if (!iso) return;
+          if (feature.properties?.name_en) {
+            fallbackNames[iso] = feature.properties.name_en;
+          }
 
           if (highlighted.has(iso)) {
             highlighted.delete(iso);
@@ -146,14 +545,40 @@
           }
 
           refreshPhilStyling(map);
+          renderSelectionList();
         });
 
-        // Change cursor to pointer on hover
+        const hoverStateTarget = { source: 'countries', 'source-layer': 'country_boundaries' };
+
+        map.on('mousemove', 'country-fills', (event) => {
+          if (!event.features?.length) return;
+          const feature = event.features[0];
+          const iso = feature.properties[COUNTRY_PROP];
+          if (!iso) return;
+          if (feature.properties?.name_en) {
+            fallbackNames[iso] = feature.properties.name_en;
+          }
+
+          if (hoveredFeatureId && hoveredFeatureId !== iso) {
+            map.setFeatureState({ ...hoverStateTarget, id: hoveredFeatureId }, { hover: false });
+          }
+
+          hoveredFeatureId = iso;
+          map.setFeatureState({ ...hoverStateTarget, id: iso }, { hover: true });
+          updateHoverReadout(labelForIso(iso));
+        });
+
         map.on('mouseenter', 'country-fills', () => {
           map.getCanvas().style.cursor = 'pointer';
         });
+
         map.on('mouseleave', 'country-fills', () => {
           map.getCanvas().style.cursor = '';
+          if (hoveredFeatureId) {
+            map.setFeatureState({ ...hoverStateTarget, id: hoveredFeatureId }, { hover: false });
+            hoveredFeatureId = null;
+          }
+          updateHoverReadout();
         });
       });
     </script>
