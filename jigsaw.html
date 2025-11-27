@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>TalkTravel Jigsaw Map Demo</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <link
+      href="https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.css"
+      rel="stylesheet"
+    />
+    <style>
+      body { margin: 0; padding: 0; background: #020617; }
+      #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+      .mapboxgl-ctrl-logo, .mapboxgl-ctrl-attrib { display: none !important; }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.js"></script>
+    <script>
+      // 1) BASIC MAP INIT
+      mapboxgl.accessToken = 'pk.eyJ1IjoiZGttaWNoYWVscyIsImEiOiJjbWlnczV6bnQwYjlxM2Nvb2U2YjNseWxoIn0.bG5oBDdzT3coIAlUDk8fxA';
+
+      const map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/dark-v11', // base style; we’ll override visuals
+        center: [0, 25], // longitude, latitude
+        zoom: 1.4,
+      });
+
+      const philPalette = {
+        active: '#f4b98d',
+        accent: '#ffe7c2',
+        neutral: '#020617',
+        border: '#0f172a',
+        glow: '#fcd7a5'
+      };
+
+      const COUNTRY_PROP = 'iso_3166_1_alpha_3';
+
+      // Click-to-toggle state (use alpha-3 codes to match source data)
+      let highlighted = new Set(['USA', 'FRA', 'JPN', 'THA']);
+
+      const highlightCondition = () => [
+        'in',
+        ['get', COUNTRY_PROP],
+        ['literal', Array.from(highlighted)]
+      ];
+
+      const makeFillColorExpression = () => [
+        'case',
+        highlightCondition(),
+        philPalette.active,
+        philPalette.neutral
+      ];
+
+      const makeFillOpacityExpression = () => [
+        'case',
+        highlightCondition(),
+        0.95,
+        0.35
+      ];
+
+      const makeOutlineExpression = () => [
+        'case',
+        highlightCondition(),
+        philPalette.accent,
+        philPalette.border
+      ];
+
+      const makeGlowExpression = () => [
+        'case',
+        highlightCondition(),
+        philPalette.glow,
+        'rgba(0,0,0,0)'
+      ];
+
+      function refreshPhilStyling(mapInstance) {
+        mapInstance.setPaintProperty('country-fills', 'fill-color', makeFillColorExpression());
+        mapInstance.setPaintProperty('country-fills', 'fill-opacity', makeFillOpacityExpression());
+        mapInstance.setPaintProperty('country-fills', 'fill-outline-color', makeOutlineExpression());
+        mapInstance.setPaintProperty('country-glow', 'line-color', makeGlowExpression());
+      }
+
+      map.on('load', () => {
+        // 2) ADD COUNTRY BOUNDARIES SOURCE
+        // This uses Mapbox's country-boundaries tileset.
+        // In your account, you may need to enable `mapbox.country-boundaries-v1`.
+        map.addSource('countries', {
+          type: 'vector',
+          url: 'mapbox://mapbox.country-boundaries-v1'
+        });
+
+        // 3) ADD FILL LAYER (THE JIGSAW LOOK)
+        map.addLayer({
+          id: 'country-fills',
+          type: 'fill',
+          source: 'countries',
+          'source-layer': 'country_boundaries',
+          paint: {
+            'fill-color': makeFillColorExpression(),   // Phil-style solid fill
+            'fill-opacity': makeFillOpacityExpression(),
+            'fill-outline-color': makeOutlineExpression()
+          }
+        });
+
+        // Optional: a thin border layer on top
+        map.addLayer({
+          id: 'country-borders',
+          type: 'line',
+          source: 'countries',
+          'source-layer': 'country_boundaries',
+          paint: {
+            'line-color': '#1f2937',
+            'line-width': 0.5
+          }
+        });
+
+        map.addLayer({
+          id: 'country-glow',
+          type: 'line',
+          source: 'countries',
+          'source-layer': 'country_boundaries',
+          paint: {
+            'line-color': makeGlowExpression(),
+            'line-width': 4,
+            'line-blur': 2,
+            'line-opacity': 0.35
+          }
+        });
+
+        // 4) CLICK INTERACTION: TOGGLE HIGHLIGHTED COUNTRIES
+        map.on('click', (e) => {
+          const features = map.queryRenderedFeatures(e.point, { layers: ['country-fills'] });
+          if (!features.length) return;
+          const feature = features[0];
+
+          const iso = feature.properties[COUNTRY_PROP];
+          if (!iso) return;
+
+          if (highlighted.has(iso)) {
+            highlighted.delete(iso);
+          } else {
+            highlighted.add(iso);
+          }
+
+          refreshPhilStyling(map);
+        });
+
+        // Change cursor to pointer on hover
+        map.on('mouseenter', 'country-fills', () => {
+          map.getCanvas().style.cursor = 'pointer';
+        });
+        map.on('mouseleave', 'country-fills', () => {
+          map.getCanvas().style.cursor = '';
+        });
+      });
+    </script>
+  </body>
+</html>
+
