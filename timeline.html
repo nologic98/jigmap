@@ -357,9 +357,10 @@
       let totalMiles = 0;
       let lastCoords = HOME;
 
-      // Visit tracking: state/country -> { visits: number, totalDays: number }
-      const stateVisits = new Map();
-      const countryVisits = new Map();
+      // Visit tracking: state/country/region -> { visits: number, totalDays: number }
+      const stateVisits = new Map();        // US states
+      const countryVisits = new Map();      // All countries (for base country shading)
+      const foreignRegionVisits = new Map(); // Foreign regions/cities for detailed markers
       let discoveredCountries = new Set();
 
       // Routes between places
@@ -520,15 +521,16 @@
         return { type: 'FeatureCollection', features };
       }
 
-      // Generate country fill expression based on visits
+      // Generate country fill expression - always light shade for visited countries
+      // (regional markers will show the intensity detail)
       function makeCountryFillColor() {
         // Build match expression for visited countries (non-US)
         const conditions = [];
         countryVisits.forEach((visit, iso) => {
           if (iso === 'USA') return; // Handle US separately via states
-          const intensity = calculateIntensity(visit.visits, visit.totalDays);
+          // Always use lightest shade for country base
           conditions.push(iso);
-          conditions.push(palette.intensity[intensity]);
+          conditions.push(palette.intensity[0]); // Light base shade
         });
 
         if (conditions.length === 0) {
@@ -543,8 +545,38 @@
         ];
       }
 
+      // Build GeoJSON for foreign region markers with intensity
+      function buildForeignRegionsGeoJSON() {
+        const features = [];
+
+        foreignRegionVisits.forEach((visit, key) => {
+          const [country, region] = key.split('::');
+          const coords = stateCentroids[region] || countryCentroids[countryToISO[country]];
+
+          if (coords) {
+            const intensity = calculateIntensity(visit.visits, visit.totalDays);
+            features.push({
+              type: 'Feature',
+              geometry: {
+                type: 'Point',
+                coordinates: [coords.lon, coords.lat],
+              },
+              properties: {
+                country,
+                region,
+                intensity,
+                visits: visit.visits,
+                totalDays: visit.totalDays,
+              },
+            });
+          }
+        });
+
+        return { type: 'FeatureCollection', features };
+      }
+
       function refreshStyling() {
-        // Update country fills (non-US)
+        // Update country fills (non-US) - light base shade
         if (map.getLayer('country-fills')) {
           map.setPaintProperty('country-fills', 'fill-color', makeCountryFillColor());
         }
@@ -552,6 +584,11 @@
         // Update US states
         if (map.getSource('us-states')) {
           map.getSource('us-states').setData(buildStatesWithIntensity());
+        }
+
+        // Update foreign region markers
+        if (map.getSource('foreign-regions')) {
+          map.getSource('foreign-regions').setData(buildForeignRegionsGeoJSON());
         }
       }
 
@@ -637,6 +674,17 @@
           sv.totalDays += days;
         }
 
+        // Track foreign region visit (non-US)
+        if (entry.country !== 'United States') {
+          const regionKey = `${entry.country}::${entry.state || entry.city}`;
+          if (!foreignRegionVisits.has(regionKey)) {
+            foreignRegionVisits.set(regionKey, { visits: 0, totalDays: 0 });
+          }
+          const fr = foreignRegionVisits.get(regionKey);
+          fr.visits++;
+          fr.totalDays += days;
+        }
+
         // Refresh map styling
         refreshStyling();
 
@@ -701,6 +749,7 @@
         currentIndex = 0;
         stateVisits.clear();
         countryVisits.clear();
+        foreignRegionVisits.clear();
         discoveredCountries.clear();
         routes = [];
         lastCoords = HOME;
@@ -717,6 +766,7 @@
 
         map.getSource('routes')?.setData({ type: 'FeatureCollection', features: [] });
         map.getSource('active-route')?.setData({ type: 'FeatureCollection', features: [] });
+        map.getSource('foreign-regions')?.setData({ type: 'FeatureCollection', features: [] });
         refreshStyling();
 
         document.getElementById('progress-fill').style.width = '0%';
@@ -849,6 +899,32 @@
             'line-opacity': 1,
           },
           layout: { 'line-cap': 'round', 'line-join': 'round' },
+        });
+
+        // Foreign region markers - shows intensity for specific locations within countries
+        map.addSource('foreign-regions', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+        map.addLayer({
+          id: 'foreign-region-markers',
+          type: 'circle',
+          source: 'foreign-regions',
+          paint: {
+            'circle-radius': [
+              'interpolate', ['linear'], ['zoom'],
+              2, 6,
+              6, 12,
+            ],
+            'circle-color': [
+              'case',
+              ['==', ['get', 'intensity'], 4], palette.intensity[4],
+              ['==', ['get', 'intensity'], 3], palette.intensity[3],
+              ['==', ['get', 'intensity'], 2], palette.intensity[2],
+              ['==', ['get', 'intensity'], 1], palette.intensity[1],
+              palette.intensity[0],
+            ],
+            'circle-stroke-color': '#ffffff',
+            'circle-stroke-width': 2,
+            'circle-opacity': 0.9,
+          },
         });
 
         // Home marker
