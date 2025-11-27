@@ -137,6 +137,7 @@
     <div id="map"></div>
     <div class="control-panel">
       <button id="btn-simulate">Simulate Discovery</button>
+      <button id="btn-tour">Tour</button>
       <button id="btn-reset">Reset</button>
       <div class="stats">Discovered: <strong id="count">0</strong></div>
     </div>
@@ -275,6 +276,8 @@
       let simulationIndex = 0;
       let animationFrame = null;
       let lastVisitedCountry = null; // Track for regional branching
+      let isTouring = false;
+      let tourIndex = 0;
 
       const isMobile = window.innerWidth <= 480;
 
@@ -312,7 +315,34 @@
         map.setPaintProperty('country-fills', 'fill-opacity', makeFillOpacity());
         map.setPaintProperty('country-fills', 'fill-outline-color', makeOutline());
         map.setPaintProperty('country-glow', 'line-color', makeGlow());
+        updateDestinations();
         updateStats();
+      }
+
+      // Build GeoJSON for destination markers
+      function buildDestinationsGeoJSON() {
+        const features = [];
+        discovered.forEach(iso => {
+          if (iso === 'USA') return; // Skip home country
+          const centroid = countryCentroids[iso];
+          if (!centroid) return;
+          features.push({
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: [centroid.lon, centroid.lat],
+            },
+            properties: { iso },
+          });
+        });
+        return { type: 'FeatureCollection', features };
+      }
+
+      function updateDestinations() {
+        const source = map.getSource('destinations');
+        if (source) {
+          source.setData(buildDestinationsGeoJSON());
+        }
       }
 
       function updateStats() {
@@ -507,6 +537,11 @@
           source.setData({ type: 'FeatureCollection', features: [] });
         }
 
+        const destSource = map.getSource('destinations');
+        if (destSource) {
+          destSource.setData({ type: 'FeatureCollection', features: [] });
+        }
+
         refreshCountryStyling();
 
         map.flyTo({
@@ -514,6 +549,73 @@
           zoom: isMobile ? 2 : 3,
           duration: 1000,
         });
+      }
+
+      // Tour mode - cinematic flythrough of discovered places
+      function getTourStops() {
+        // Start at home, then visit each discovered country
+        const stops = [{ lon: HOME.lon, lat: HOME.lat, name: 'San Francisco', zoom: 4 }];
+        discovered.forEach(iso => {
+          if (iso === 'USA') return;
+          const centroid = countryCentroids[iso];
+          if (centroid) {
+            stops.push({ lon: centroid.lon, lat: centroid.lat, iso, zoom: 4 });
+          }
+        });
+        return stops;
+      }
+
+      function runTour() {
+        const stops = getTourStops();
+        if (tourIndex >= stops.length) {
+          // End of tour - zoom out to show everything
+          stopTour();
+          map.flyTo({
+            center: [0, 20],
+            zoom: isMobile ? 0.8 : 1.5,
+            duration: 2500,
+            essential: true,
+          });
+          return;
+        }
+
+        const stop = stops[tourIndex];
+        tourIndex++;
+
+        map.flyTo({
+          center: [stop.lon, stop.lat],
+          zoom: stop.zoom,
+          duration: 2000,
+          essential: true,
+          curve: 1.2,
+        });
+
+        // Wait for flyTo to complete before next stop
+        map.once('moveend', () => {
+          if (isTouring) {
+            setTimeout(runTour, 1200); // Pause at each location
+          }
+        });
+      }
+
+      function startTour() {
+        if (isTouring) return;
+        if (discovered.size <= 1) {
+          // Nothing to tour
+          return;
+        }
+        isTouring = true;
+        tourIndex = 0;
+        document.getElementById('btn-tour').classList.add('active');
+        document.getElementById('btn-tour').textContent = 'Touring...';
+        runTour();
+      }
+
+      function stopTour() {
+        isTouring = false;
+        tourIndex = 0;
+        document.getElementById('btn-tour').classList.remove('active');
+        document.getElementById('btn-tour').textContent = 'Tour';
       }
 
       // Initialize map
@@ -587,6 +689,7 @@
               5, ['case', ['get', 'isRegional'], 2.5, 4],
             ],
             'line-opacity': ['case', ['get', 'isRegional'], 0.75, 0.9],
+            'line-dasharray': [2, 1.5],  // Dashed flight-path style
           },
           layout: {
             'line-cap': 'round',
@@ -629,9 +732,42 @@
           },
         });
 
+        // Destination markers source and layers
+        map.addSource('destinations', {
+          type: 'geojson',
+          data: { type: 'FeatureCollection', features: [] },
+        });
+
+        // Outer glow/pulse for destinations
+        map.addLayer({
+          id: 'destination-glow',
+          type: 'circle',
+          source: 'destinations',
+          paint: {
+            'circle-radius': 12,
+            'circle-color': 'transparent',
+            'circle-stroke-color': palette.accent,
+            'circle-stroke-width': 1.5,
+            'circle-opacity': 0.5,
+          },
+        });
+
+        // Main destination markers
+        map.addLayer({
+          id: 'destination-points',
+          type: 'circle',
+          source: 'destinations',
+          paint: {
+            'circle-radius': 5,
+            'circle-color': palette.active,
+            'circle-stroke-color': '#ffffff',
+            'circle-stroke-width': 1.5,
+          },
+        });
+
         // Click to discover countries
         map.on('click', 'country-fills', (e) => {
-          if (isSimulating) return;
+          if (isSimulating || isTouring) return;
           const feature = e.features[0];
           const iso = feature.properties[COUNTRY_PROP];
           if (iso && iso !== 'USA') {
@@ -651,6 +787,7 @@
 
       // Button handlers
       document.getElementById('btn-simulate').addEventListener('click', () => {
+        if (isTouring) stopTour();
         if (isSimulating) {
           stopSimulation();
         } else {
@@ -658,7 +795,19 @@
         }
       });
 
-      document.getElementById('btn-reset').addEventListener('click', reset);
+      document.getElementById('btn-tour').addEventListener('click', () => {
+        if (isSimulating) stopSimulation();
+        if (isTouring) {
+          stopTour();
+        } else {
+          startTour();
+        }
+      });
+
+      document.getElementById('btn-reset').addEventListener('click', () => {
+        stopTour();
+        reset();
+      });
     </script>
   </body>
 </html>
