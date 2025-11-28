@@ -1,0 +1,778 @@
+[
+  {
+    "city": "Las Vegas",
+    "country": "United States",
+    "state": "Nevada",
+    "date": "2022-02-08",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "Columbus",
+    "country": "United States",
+    "state": "Ohio",
+    "date": "2022-03-09",
+    "days": 1,
+    "photos": 2
+  },
+  {
+    "city": "Cleveland",
+    "country": "United States",
+    "state": "Ohio",
+    "date": "2022-04-30",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "Miami Gardens",
+    "country": "United States",
+    "state": "Florida",
+    "date": "2022-05-07",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "Chicago",
+    "country": "United States",
+    "state": "Illinois",
+    "date": "2022-05-28",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "Atlanta",
+    "country": "United States",
+    "state": "Georgia",
+    "date": "2022-06-05",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "Honolulu",
+    "country": "United States",
+    "state": "Hawaii",
+    "date": "2022-06-16",
+    "days": 4,
+    "photos": 12
+  },
+  {
+    "city": "New York",
+    "country": "United States",
+    "state": "New York",
+    "date": "2022-06-21",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "San Isidro Llano Grande",
+    "country": "Mexico",
+    "state": "Oaxaca",
+    "date": "2022-10-06",
+    "days": 5,
+    "photos": 12
+  },
+  {
+    "city": "Pero",
+    "country": "Italy",
+    "state": "Lombardia",
+    "date": "2022-10-27",
+    "days": 4,
+    "photos": 12
+  },
+  {
+    "city": "Amiens",
+    "country": "France",
+    "state": "Hauts-de-France",
+    "date": "2022-11-02",
+    "days": 1,
+    "photos": 2
+  },
+  {
+    "city": "Saint-Folquin",
+    "country": "France",
+    "state": "Hauts-de-France",
+    "date": "2022-11-02",
+    "days": 1,
+    "photos": 2
+  },
+  {
+    "city": "Province of Varese",
+    "country": "Italy",
+    "state": "Lombardy",
+    "date": "2022-11-02",
+    "days": 1,
+    "photos": 2
+  },
+  {
+    "city": "Amphoe Mueang Chiang Mai",
+    "country": "Thailand",
+    "state": "Chang Wat Chiang Mai",
+    "date": "2022-12-27",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "Pai",
+    "country": "Thailand",
+    "state": "Chang Wat Mae Hong Son",
+    "date": "2022-12-31",
+    "days": 1,
+    "photos": 1
+  },
+  {
+    "city": "Wiang Tai",
+    "country": "Thailand",
+    "state": "Chang Wat Mae Hong Son",
+    "date": "2022-12-31",
+    "days": 1,
+    "photos": 4
+  },
+  {
+    "city": "ปาย",
+    "country": "Thailand",
+    "state": "แม่ฮ่องสอน",
+    "date": "2022-12-31",
+    "days": 1,
+    "photos": 1
+  },
+  {
+    "city": "Amphoe Mueang Chiang Mai",
+    "country": "Thailand",
+    "state": "Chang Wat Chiang Mai",
+    "date": "2023-01-03",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "Huai Lan",
+    "country": "Thailand",
+    "state": "Phayao",
+    "date": "2023-01-05",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "Sai Thai",
+    "country": "Thailand",
+    "state": "Krabi",
+    "date": "2023-01-09",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "San Andrés",
+    "country": "Colombia",
+    "state": "San Andrés y Providencia",
+    "date": "2023-01-29",
+    "days": 4,
+    "photos": 10
+  },
+  {
+    "city": "Dallas",
+    "country": "United States",
+    "state": "Texas",
+    "date": "2023-02-10",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "Caldwell",
+    "country": "United States",
+    "state": "Ohio",
+    "date": "2023-02-22",
+    "days": 1,
+    "photos": 2
+  },
+  {
+    "city": "Sedona",
+    "country": "United States",
+    "state": "Arizona",
+    "date": "2023-04-02",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "Ciudad de México",
+    "country": "Mexico",
+    "state": "Ciudad de México",
+    "date": "2023-04-14",
+    "days": 4,
+    "photos": 12
+  },
+  {
+    "city": "Lima",
+    "country": "Peru",
+    "state": "Provincia de Lima",
+    "date": "2023-05-20",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "Cusco",
+    "country": "Peru",
+    "state": "Cuzco",
+    "date": "2023-05-23",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "Chillca",
+    "country": "Peru",
+    "state": "Cuzco",
+    "date": "2023-05-25",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "Puno",
+    "country": "Peru",
+    "state": "Puno",
+    "date": "2023-05-28",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "Georgetown",
+    "country": "United States",
+    "state": "Texas",
+    "date": "2023-06-22",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "Austin",
+    "country": "United States",
+    "state": "Texas",
+    "date": "2023-07-11",
+    "days": 1,
+    "photos": 2
+  },
+  {
+    "city": "Georgetown",
+    "country": "United States",
+    "state": "Texas",
+    "date": "2023-07-11",
+    "days": 1,
+    "photos": 4
+  },
+  {
+    "city": "Cedar Park",
+    "country": "United States",
+    "state": "Texas",
+    "date": "2023-07-15",
+    "days": 1,
+    "photos": 2
+  },
+  {
+    "city": "Georgetown",
+    "country": "United States",
+    "state": "Texas",
+    "date": "2023-07-15",
+    "days": 1,
+    "photos": 2
+  },
+  {
+    "city": "Georgetown",
+    "country": "United States",
+    "state": "Texas",
+    "date": "2023-07-15",
+    "days": 1,
+    "photos": 2
+  },
+  {
+    "city": "Austin",
+    "country": "United States",
+    "state": "Texas",
+    "date": "2023-07-18",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "Cedar Park",
+    "country": "United States",
+    "state": "Texas",
+    "date": "2023-07-21",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "Austin",
+    "country": "United States",
+    "state": "Texas",
+    "date": "2023-07-23",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "Houston",
+    "country": "United States",
+    "state": "Texas",
+    "date": "2023-07-31",
+    "days": 5,
+    "photos": 8
+  },
+  {
+    "city": "Houston",
+    "country": "United States",
+    "state": "Texas",
+    "date": "2023-08-07",
+    "days": 3,
+    "photos": 10
+  },
+  {
+    "city": "Dallas",
+    "country": "United States",
+    "state": "Texas",
+    "date": "2023-08-16",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "Fort Worth",
+    "country": "United States",
+    "state": "Texas",
+    "date": "2023-08-22",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "Fort Worth",
+    "country": "United States",
+    "state": "Texas",
+    "date": "2023-09-10",
+    "days": 1,
+    "photos": 4
+  },
+  {
+    "city": "Dallas",
+    "country": "United States",
+    "state": "Texas",
+    "date": "2023-09-13",
+    "days": 2,
+    "photos": 4
+  },
+  {
+    "city": "McKinney",
+    "country": "United States",
+    "state": "Texas",
+    "date": "2023-09-15",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "San Juan",
+    "country": "Puerto Rico",
+    "state": "San Juan",
+    "date": "2023-10-03",
+    "days": 6,
+    "photos": 12
+  },
+  {
+    "city": "Fajardo",
+    "country": "Puerto Rico",
+    "state": "Luquillo",
+    "date": "2023-10-08",
+    "days": 1,
+    "photos": 2
+  },
+  {
+    "city": "Nong Prue",
+    "country": "Thailand",
+    "state": "Samut Prakan",
+    "date": "2023-12-21",
+    "days": 1,
+    "photos": 4
+  },
+  {
+    "city": "Tambon Nong Prue",
+    "country": "Thailand",
+    "state": "Chang Wat Samut Prakan",
+    "date": "2023-12-21",
+    "days": 1,
+    "photos": 2
+  },
+  {
+    "city": "Amphoe Mueang Chiang Mai",
+    "country": "Thailand",
+    "state": "Chang Wat Chiang Mai",
+    "date": "2023-12-24",
+    "days": 7,
+    "photos": 18
+  },
+  {
+    "city": "Phoenix",
+    "country": "United States",
+    "state": "Arizona",
+    "date": "2024-01-07",
+    "days": 4,
+    "photos": 10
+  },
+  {
+    "city": "Santa Fe",
+    "country": "United States",
+    "state": "New Mexico",
+    "date": "2024-01-13",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "Albuquerque",
+    "country": "United States",
+    "state": "New Mexico",
+    "date": "2024-01-16",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "Phoenix",
+    "country": "United States",
+    "state": "Arizona",
+    "date": "2024-01-19",
+    "days": 7,
+    "photos": 12
+  },
+  {
+    "city": "Phoenix",
+    "country": "United States",
+    "state": "Arizona",
+    "date": "2024-01-28",
+    "days": 1,
+    "photos": 4
+  },
+  {
+    "city": "Tucson",
+    "country": "United States",
+    "state": "Arizona",
+    "date": "2024-01-31",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "Chandler",
+    "country": "United States",
+    "state": "Arizona",
+    "date": "2024-02-03",
+    "days": 1,
+    "photos": 2
+  },
+  {
+    "city": "Phoenix",
+    "country": "United States",
+    "state": "Arizona",
+    "date": "2024-02-03",
+    "days": 1,
+    "photos": 4
+  },
+  {
+    "city": "Patagonia",
+    "country": "United States",
+    "state": "Arizona",
+    "date": "2024-02-06",
+    "days": 1,
+    "photos": 2
+  },
+  {
+    "city": "Sierra Vista",
+    "country": "United States",
+    "state": "Arizona",
+    "date": "2024-02-06",
+    "days": 1,
+    "photos": 2
+  },
+  {
+    "city": "Tucson",
+    "country": "United States",
+    "state": "Arizona",
+    "date": "2024-02-06",
+    "days": 1,
+    "photos": 2
+  },
+  {
+    "city": "Carson City",
+    "country": "United States",
+    "state": "Nevada",
+    "date": "2024-02-12",
+    "days": 1,
+    "photos": 4
+  },
+  {
+    "city": "Tucson",
+    "country": "United States",
+    "state": "Arizona",
+    "date": "2024-02-12",
+    "days": 1,
+    "photos": 2
+  },
+  {
+    "city": "Tucson",
+    "country": "United States",
+    "state": "Arizona",
+    "date": "2024-02-27",
+    "days": 3,
+    "photos": 12
+  },
+  {
+    "city": "Las Vegas",
+    "country": "United States",
+    "state": "Nevada",
+    "date": "2024-03-06",
+    "days": 1,
+    "photos": 4
+  },
+  {
+    "city": "Phoenix",
+    "country": "United States",
+    "state": "Arizona",
+    "date": "2024-03-06",
+    "days": 1,
+    "photos": 2
+  },
+  {
+    "city": "Dayton",
+    "country": "United States",
+    "state": "Nevada",
+    "date": "2024-03-09",
+    "days": 3,
+    "photos": 12
+  },
+  {
+    "city": "Tucson",
+    "country": "United States",
+    "state": "Arizona",
+    "date": "2024-04-11",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "Kathmandu",
+    "country": "Nepal",
+    "state": "Bagmati Province",
+    "date": "2024-04-17",
+    "days": 6,
+    "photos": 18
+  },
+  {
+    "city": "Singalila Forest",
+    "country": "India",
+    "state": "West Bengal",
+    "date": "2024-04-25",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "Doha",
+    "country": "Qatar",
+    "state": "Doha Municipality",
+    "date": "2024-04-28",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "Queen Creek",
+    "country": "United States",
+    "state": "Arizona",
+    "date": "2024-05-08",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "Tucson",
+    "country": "United States",
+    "state": "Arizona",
+    "date": "2024-05-10",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "Phoenix",
+    "country": "United States",
+    "state": "Arizona",
+    "date": "2024-05-17",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "Phoenix",
+    "country": "United States",
+    "state": "Arizona",
+    "date": "2024-05-22",
+    "days": 6,
+    "photos": 14
+  },
+  {
+    "city": "Surprise",
+    "country": "United States",
+    "state": "Arizona",
+    "date": "2024-05-27",
+    "days": 1,
+    "photos": 4
+  },
+  {
+    "city": "Redmond",
+    "country": "United States",
+    "state": "Washington",
+    "date": "2024-08-02",
+    "days": 1,
+    "photos": 2
+  },
+  {
+    "city": "Richmond",
+    "country": "Canada",
+    "state": "British Columbia",
+    "date": "2024-08-03",
+    "days": 1,
+    "photos": 4
+  },
+  {
+    "city": "Richmond",
+    "country": "Canada",
+    "state": "British Columbia",
+    "date": "2024-08-30",
+    "days": 1,
+    "photos": 2
+  },
+  {
+    "city": "Columbus",
+    "country": "United States",
+    "state": "Ohio",
+    "date": "2024-09-15",
+    "days": 1,
+    "photos": 2
+  },
+  {
+    "city": "Osaka",
+    "country": "Japan",
+    "state": "Osaka",
+    "date": "2024-10-23",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "Kyoto",
+    "country": "Japan",
+    "state": "Kyoto",
+    "date": "2024-10-26",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "Birgunj",
+    "country": "Nepal",
+    "state": "Madhesh Province",
+    "date": "2024-11-21",
+    "days": 7,
+    "photos": 12
+  },
+  {
+    "city": "Siddharthanagar",
+    "country": "Nepal",
+    "state": "Lumbini Province",
+    "date": "2024-11-30",
+    "days": 2,
+    "photos": 5
+  },
+  {
+    "city": "Lumbini Sanskritik",
+    "country": "Nepal",
+    "state": "Lumbini Province",
+    "date": "2024-12-01",
+    "days": 1,
+    "photos": 1
+  },
+  {
+    "city": "Arnavutköy",
+    "country": "Türkiye",
+    "state": "İstanbul",
+    "date": "2024-12-03",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "Thori",
+    "country": "Nepal",
+    "state": "Madhesh Province",
+    "date": "2024-12-06",
+    "days": 1,
+    "photos": 2
+  },
+  {
+    "city": "Las Vegas",
+    "country": "United States",
+    "state": "Nevada",
+    "date": "2025-02-08",
+    "days": 2,
+    "photos": 6
+  },
+  {
+    "city": "New Delhi",
+    "country": "India",
+    "state": "Delhi",
+    "date": "2025-02-25",
+    "days": 4,
+    "photos": 12
+  },
+  {
+    "city": "Kathmandu",
+    "country": "Nepal",
+    "state": "Bagmati Province",
+    "date": "2025-03-03",
+    "days": 11,
+    "photos": 24
+  },
+  {
+    "city": "Chitlang",
+    "country": "Nepal",
+    "state": "Bagmati Province",
+    "date": "2025-03-16",
+    "days": 1,
+    "photos": 6
+  },
+  {
+    "city": "Doha",
+    "country": "Qatar",
+    "state": "Doha Municipality",
+    "date": "2025-03-19",
+    "days": 1,
+    "photos": 4
+  },
+  {
+    "city": "Kathmandu",
+    "country": "Nepal",
+    "state": "Bagmati Province",
+    "date": "2025-05-04",
+    "days": 16,
+    "photos": 36
+  },
+  {
+    "city": "Douglas County",
+    "country": "United States",
+    "state": "Oregon",
+    "date": "2025-06-20",
+    "days": 1,
+    "photos": 2
+  },
+  {
+    "city": "Roseburg",
+    "country": "United States",
+    "state": "Oregon",
+    "date": "2025-06-20",
+    "days": 1,
+    "photos": 4
+  },
+  {
+    "city": "Kahului",
+    "country": "United States",
+    "state": "Hawaii",
+    "date": "2025-07-18",
+    "days": 3,
+    "photos": 6
+  },
+  {
+    "city": "Wailea-Makena",
+    "country": "United States",
+    "state": "Hawaii",
+    "date": "2025-07-20",
+    "days": 4,
+    "photos": 8
+  }
+]

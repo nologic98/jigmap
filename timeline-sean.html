@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Travel Timeline - Sean</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <link
+      href="https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.css"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      }
+      body { margin: 0; padding: 0; background: #f8faf8; color: #1B4332; overflow: hidden; }
+      #map { position: absolute; top: 36px; bottom: 60px; width: 100%; }
+      .mapboxgl-ctrl-logo, .mapboxgl-ctrl-attrib { display: none !important; }
+
+      /* Nav header */
+      .nav-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 36px;
+        background: #ffffff;
+        border-bottom: 1px solid #e2e8e4;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 12px;
+        z-index: 100;
+        font-size: 12px;
+      }
+      .nav-brand {
+        color: #1B4332;
+        font-weight: 600;
+      }
+      .nav-links {
+        display: flex;
+        gap: 4px;
+      }
+      .nav-links a {
+        padding: 4px 10px;
+        border-radius: 4px;
+        text-decoration: none;
+        color: #5c7c6a;
+        transition: color 0.15s, background 0.15s;
+      }
+      .nav-links a:hover {
+        color: #1B4332;
+        background: rgba(27, 67, 50, 0.08);
+      }
+      .nav-links a.active {
+        color: #1B4332;
+        font-weight: 600;
+      }
+
+      /* Timeline bar at bottom */
+      .timeline-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 60px;
+        background: rgba(255, 255, 255, 0.95);
+        border-top: 1px solid #e2e8e4;
+        display: flex;
+        flex-direction: column;
+        padding: 8px 16px;
+        z-index: 100;
+      }
+      .timeline-controls {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 6px;
+      }
+      .timeline-controls button {
+        padding: 4px 12px;
+        border-radius: 6px;
+        border: 1px solid #d1d9d4;
+        background: #ffffff;
+        color: #1B4332;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .timeline-controls button:hover {
+        background: rgba(45, 106, 79, 0.1);
+        border-color: #2D6A4F;
+      }
+      .timeline-controls button.active {
+        background: rgba(45, 106, 79, 0.15);
+        border-color: #2D6A4F;
+        color: #2D6A4F;
+      }
+      .timeline-date {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1B4332;
+        min-width: 100px;
+      }
+      .timeline-stats {
+        font-size: 11px;
+        color: #5c7c6a;
+        margin-left: auto;
+        display: flex;
+        gap: 12px;
+      }
+      .odometer {
+        font-weight: 600;
+        color: #2D6A4F;
+      }
+      .timeline-progress {
+        height: 6px;
+        background: #e8ede9;
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .timeline-progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #2D6A4F, #52B788);
+        border-radius: 3px;
+        width: 0%;
+        transition: width 0.3s ease;
+      }
+
+      /* Scrolling credits */
+      .credits-container {
+        position: fixed;
+        right: 16px;
+        top: 50px;
+        bottom: 74px;
+        width: 200px;
+        overflow: hidden;
+        pointer-events: none;
+        z-index: 50;
+      }
+      .credits-scroll {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .credit-item {
+        padding: 6px 10px;
+        background: rgba(255, 255, 255, 0.85);
+        border-radius: 6px;
+        font-size: 11px;
+        color: #1B4332;
+        opacity: 0;
+        transform: translateY(20px);
+        animation: creditFadeIn 0.5s ease forwards;
+      }
+      .credit-item.fading {
+        animation: creditFadeOut 0.5s ease forwards;
+      }
+      .credit-city {
+        font-weight: 600;
+        font-size: 12px;
+      }
+      .credit-meta {
+        color: #5c7c6a;
+        font-size: 10px;
+      }
+      @keyframes creditFadeIn {
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes creditFadeOut {
+        to { opacity: 0; transform: translateY(-20px); }
+      }
+
+      /* Current location callout */
+      .current-location {
+        position: fixed;
+        left: 16px;
+        top: 50px;
+        background: rgba(255, 255, 255, 0.95);
+        border: 1px solid #e2e8e4;
+        border-radius: 10px;
+        padding: 12px 16px;
+        z-index: 50;
+        max-width: 250px;
+        box-shadow: 0 4px 12px rgba(27, 67, 50, 0.1);
+      }
+      .current-location-city {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1B4332;
+      }
+      .current-location-region {
+        font-size: 12px;
+        color: #5c7c6a;
+        margin-top: 2px;
+      }
+      .current-location-date {
+        font-size: 11px;
+        color: #2D6A4F;
+        margin-top: 6px;
+        font-weight: 500;
+      }
+
+      @media (max-width: 480px) {
+        .credits-container { display: none; }
+        .current-location { max-width: 180px; padding: 8px 12px; }
+        .current-location-city { font-size: 14px; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="nav-header">
+      <div class="nav-brand">TalkTravel Maps</div>
+      <nav class="nav-links">
+        <a href="jigsaw.html">Jigsaw</a>
+        <a href="routes.html">Routes</a>
+        <a href="discover.html">Discover</a>
+        <a href="timeline.html" class="active">Timeline</a>
+      </nav>
+    </header>
+
+    <div id="map"></div>
+
+    <div class="current-location" id="current-location">
+      <div class="current-location-city" id="loc-city">Loading...</div>
+      <div class="current-location-region" id="loc-region"></div>
+      <div class="current-location-date" id="loc-date"></div>
+    </div>
+
+    <div class="credits-container">
+      <div class="credits-scroll" id="credits-scroll"></div>
+    </div>
+
+    <div class="timeline-bar">
+      <div class="timeline-controls">
+        <button id="btn-play">Play</button>
+        <button id="btn-speed">1x</button>
+        <div class="timeline-date" id="timeline-date">--</div>
+        <div class="timeline-stats">
+          <span id="timeline-places">0 places</span>
+          <span class="odometer" id="odometer">0 mi</span>
+        </div>
+      </div>
+      <div class="timeline-progress">
+        <div class="timeline-progress-fill" id="progress-fill"></div>
+      </div>
+    </div>
+
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
+    <script>
+      mapboxgl.accessToken = 'pk.eyJ1IjoiZGttaWNoYWVscyIsImEiOiJjbWlnczV6bnQwYjlxM2Nvb2U2YjNseWxoIn0.bG5oBDdzT3coIAlUDk8fxA';
+
+      // Country name to ISO mapping
+      const countryToISO = {
+        'United States': 'USA',
+        'Canada': 'CAN',
+        'Mexico': 'MEX',
+        'United Kingdom': 'GBR',
+        'France': 'FRA',
+        'Germany': 'DEU',
+        'Spain': 'ESP',
+        'Italy': 'ITA',
+        'Netherlands': 'NLD',
+        'Belgium': 'BEL',
+        'Iceland': 'ISL',
+        'Greece': 'GRC',
+        'Portugal': 'PRT',
+        'Switzerland': 'CHE',
+        'Austria': 'AUT',
+        'Japan': 'JPN',
+        'Australia': 'AUS',
+        'New Zealand': 'NZL',
+        // Sean's additional countries
+        'Colombia': 'COL',
+        'Puerto Rico': 'PRI',
+        'Thailand': 'THA',
+        'Nepal': 'NPL',
+        'India': 'IND',
+        'Türkiye': 'TUR',
+        'Peru': 'PER',
+        'Qatar': 'QAT',
+      };
+
+      // US State name to abbreviation mapping
+      const stateToAbbr = {
+        'Alabama': 'AL', 'Alaska': 'AK', 'Arizona': 'AZ', 'Arkansas': 'AR', 'California': 'CA',
+        'Colorado': 'CO', 'Connecticut': 'CT', 'Delaware': 'DE', 'Florida': 'FL', 'Georgia': 'GA',
+        'Hawaii': 'HI', 'Idaho': 'ID', 'Illinois': 'IL', 'Indiana': 'IN', 'Iowa': 'IA',
+        'Kansas': 'KS', 'Kentucky': 'KY', 'Louisiana': 'LA', 'Maine': 'ME', 'Maryland': 'MD',
+        'Massachusetts': 'MA', 'Michigan': 'MI', 'Minnesota': 'MN', 'Mississippi': 'MS', 'Missouri': 'MO',
+        'Montana': 'MT', 'Nebraska': 'NE', 'Nevada': 'NV', 'New Hampshire': 'NH', 'New Jersey': 'NJ',
+        'New Mexico': 'NM', 'New York': 'NY', 'North Carolina': 'NC', 'North Dakota': 'ND', 'Ohio': 'OH',
+        'Oklahoma': 'OK', 'Oregon': 'OR', 'Pennsylvania': 'PA', 'Rhode Island': 'RI', 'South Carolina': 'SC',
+        'South Dakota': 'SD', 'Tennessee': 'TN', 'Texas': 'TX', 'Utah': 'UT', 'Vermont': 'VT',
+        'Virginia': 'VA', 'Washington': 'WA', 'West Virginia': 'WV', 'Wisconsin': 'WI', 'Wyoming': 'WY',
+        'District of Columbia': 'DC',
+      };
+
+      // Country centroids for routes (non-US)
+      const countryCentroids = {
+        CAN: { lon: -123.1, lat: 49.3 },
+        GBR: { lon: -0.1, lat: 51.5 },
+        FRA: { lon: 2.3, lat: 48.9 },
+        DEU: { lon: 10.5, lat: 51.2 },
+        ESP: { lon: -3.7, lat: 40.4 },
+        ITA: { lon: 12.5, lat: 41.9 },
+        NLD: { lon: 4.9, lat: 52.4 },
+        BEL: { lon: 4.4, lat: 50.8 },
+        ISL: { lon: -18.1, lat: 64.1 },
+        GRC: { lon: 23.7, lat: 37.98 },
+        // Sean's additional countries
+        MEX: { lon: -99.1, lat: 19.4 },
+        COL: { lon: -81.7, lat: 12.6 },  // San Andrés island
+        PRI: { lon: -66.1, lat: 18.5 },  // San Juan
+        THA: { lon: 98.9, lat: 18.8 },   // Chiang Mai
+        NPL: { lon: 85.3, lat: 27.7 },   // Kathmandu
+        IND: { lon: 77.2, lat: 28.6 },   // New Delhi
+        TUR: { lon: 29.0, lat: 41.0 },   // Istanbul
+        PER: { lon: -77.0, lat: -12.0 }, // Lima
+        QAT: { lon: 51.5, lat: 25.3 },   // Doha
+        JPN: { lon: 135.5, lat: 34.7 },  // Osaka/Kyoto area
+      };
+
+      // US State and region centroids for camera positioning and routes
+      const stateCentroids = {
+        'California': { lon: -119.4, lat: 36.8 },
+        'Florida': { lon: -81.5, lat: 27.6 },
+        'Nevada': { lon: -115.1, lat: 36.2 },
+        'New Jersey': { lon: -74.4, lat: 40.1 },
+        'New York': { lon: -74.0, lat: 40.7 },
+        'Texas': { lon: -97.3, lat: 32.7 },
+        'Utah': { lon: -111.5, lat: 40.6 },
+        'Missouri': { lon: -94.6, lat: 39.1 },
+        'Oregon': { lon: -121.8, lat: 44.0 },
+        'Hawaii': { lon: -155.5, lat: 19.9 },
+        'Washington': { lon: -122.3, lat: 47.6 },
+        'Pennsylvania': { lon: -75.2, lat: 40.0 },
+        'Arizona': { lon: -111.9, lat: 33.4 },  // Phoenix
+        'Georgia': { lon: -84.4, lat: 33.75 },  // Atlanta
+        'Illinois': { lon: -87.6, lat: 41.9 },  // Chicago
+        'Ohio': { lon: -82.9, lat: 40.0 },  // Columbus
+        'New Mexico': { lon: -106.6, lat: 35.1 },  // Albuquerque
+        'British Columbia': { lon: -123.1, lat: 49.3 },
+        // European regions
+        'Bayern': { lon: 11.6, lat: 48.1 },
+        'Hessen': { lon: 8.7, lat: 50.1 },
+        'Île-de-France': { lon: 2.3, lat: 48.9 },
+        'Provence-Alpes-Côte d\'Azur': { lon: 7.0, lat: 43.7 },
+        'Vlaanderen': { lon: 4.4, lat: 51.0 },
+        'Catalonia': { lon: 2.2, lat: 41.4 },
+        'Comunidad de Madrid': { lon: -3.7, lat: 40.4 },
+        'Skaftárhreppur': { lon: -18.1, lat: 64.0 },
+        // Greek islands
+        'Mikonos': { lon: 25.3, lat: 37.45 },
+        'Ormos Firon': { lon: 25.4, lat: 36.4 },  // Santorini
+        // Sean's regions - Mexico
+        'Oaxaca': { lon: -96.7, lat: 17.1 },
+        'Ciudad de México': { lon: -99.1, lat: 19.4 },
+        // Sean's regions - Italy
+        'Lombardia': { lon: 9.2, lat: 45.5 },  // Milan area
+        // Sean's regions - Colombia
+        'San Andrés y Providencia': { lon: -81.7, lat: 12.55 },
+        // Sean's regions - Puerto Rico
+        'San Juan': { lon: -66.1, lat: 18.47 },
+        // Sean's regions - Thailand
+        'Chang Wat Chiang Mai': { lon: 98.98, lat: 18.79 },
+        // Sean's regions - Nepal
+        'Bagmati Province': { lon: 85.32, lat: 27.7 },   // Kathmandu
+        'Madhesh Province': { lon: 84.88, lat: 27.0 },   // Birgunj
+        'Lumbini Province': { lon: 83.45, lat: 27.5 },   // Siddharthanagar/Lumbini
+        // Sean's regions - India
+        'Delhi': { lon: 77.21, lat: 28.61 },
+        'West Bengal': { lon: 88.4, lat: 22.6 },  // Kolkata
+        // Sean's regions - Thailand (additional)
+        'Chang Wat Mae Hong Son': { lon: 97.97, lat: 19.3 },
+        'Chang Wat Samut Prakan': { lon: 100.6, lat: 13.6 },
+        'Samut Prakan': { lon: 100.6, lat: 13.6 },
+        'Krabi': { lon: 99.0, lat: 8.1 },
+        'Phayao': { lon: 99.9, lat: 19.2 },
+        'แม่ฮ่องสอน': { lon: 97.97, lat: 19.3 },  // Mae Hong Son in Thai
+        // Sean's regions - Japan
+        'Kyoto': { lon: 135.77, lat: 35.0 },
+        'Osaka': { lon: 135.5, lat: 34.7 },
+        // Sean's regions - Peru
+        'Cuzco': { lon: -72.0, lat: -13.5 },
+        'Provincia de Lima': { lon: -77.0, lat: -12.05 },
+        'Puno': { lon: -70.0, lat: -15.8 },
+        // Sean's regions - Turkey
+        'İstanbul': { lon: 29.0, lat: 41.0 },
+        // Sean's regions - Qatar
+        'Doha Municipality': { lon: 51.53, lat: 25.29 },
+        // Sean's regions - France
+        'Hauts-de-France': { lon: 2.8, lat: 49.9 },
+        // Sean's regions - Puerto Rico (additional)
+        'Luquillo': { lon: -65.7, lat: 18.4 },
+        // Sean's regions - Italy (alternate spelling)
+        'Lombardy': { lon: 9.2, lat: 45.5 },
+      };
+
+      // Mapping from timeline region names to Natural Earth admin-1 names
+      // NE 10m uses départements for France, provinces for Spain/Belgium
+      const regionNameMapping = {
+        'Bayern': 'Bayern',
+        'Hessen': 'Hessen',
+        'Île-de-France': 'Paris',  // NE uses départements, Paris is the main one
+        'Provence-Alpes-Côte d\'Azur': 'Alpes-Maritimes',  // Châteauneuf-Grasse is here
+        'Vlaanderen': 'Antwerp',  // Oud-Turnhout is in Antwerp province
+        'Catalonia': 'Barcelona',  // NE uses provinces
+        'Comunidad de Madrid': 'Madrid',
+        'Skaftárhreppur': 'Suðurland',  // Southern Iceland
+        'British Columbia': 'British Columbia',
+        // Greek islands - both in South Aegean
+        'Mikonos': 'Notio Aigaio',
+        'Ormos Firon': 'Notio Aigaio',
+        // Sean's regions - Mexico
+        'Oaxaca': 'Oaxaca',
+        'Ciudad de México': 'Distrito Federal',  // NE uses older name
+        // Sean's regions - Italy
+        'Lombardia': 'Lombardia',
+        // Sean's regions - Colombia
+        'San Andrés y Providencia': 'San Andrés y Providencia',
+        // Sean's regions - Puerto Rico (US territory but separate admin)
+        'San Juan': 'San Juan',
+        // Sean's regions - Thailand
+        'Chang Wat Chiang Mai': 'Chiang Mai',
+        // Sean's regions - Nepal
+        'Bagmati Province': 'Bagmati',
+        'Madhesh Province': 'Madhesh',
+        'Lumbini Province': 'Lumbini',
+        // Sean's regions - India
+        'Delhi': 'NCT of Delhi',
+        'West Bengal': 'West Bengal',
+        // Sean's regions - Thailand (additional)
+        'Chang Wat Mae Hong Son': 'Mae Hong Son',
+        'Chang Wat Samut Prakan': 'Samut Prakan',
+        'Samut Prakan': 'Samut Prakan',
+        'Krabi': 'Krabi',
+        'Phayao': 'Phayao',
+        'แม่ฮ่องสอน': 'Mae Hong Son',
+        // Sean's regions - Japan
+        'Kyoto': 'Kyoto',
+        'Osaka': 'Osaka',
+        // Sean's regions - Peru
+        'Cuzco': 'Cusco',  // NE uses modern spelling
+        'Provincia de Lima': 'Lima',
+        'Puno': 'Puno',
+        // Sean's regions - Turkey
+        'İstanbul': 'Istanbul',
+        // Sean's regions - Qatar
+        'Doha Municipality': 'Baladiyat ad Dawhah',  // or Ad Dawhah
+        // Sean's regions - France
+        'Hauts-de-France': 'Nord',  // NE uses département names
+        // Sean's regions - Puerto Rico
+        'Luquillo': 'Luquillo',
+        // Sean's regions - Italy
+        'Lombardy': 'Lombardia',
+      };
+
+      const HOME = { lon: -122.419, lat: 37.775 };
+      const COUNTRY_PROP = 'iso_3166_1_alpha_3';
+
+      // Palette - intensity levels for visits
+      const palette = {
+        // Base colors
+        neutral: '#e8e8e8',  // Pure neutral gray, no green hue
+        border: '#cccccc',   // Neutral gray border
+        route: '#2D6A4F',
+        // Intensity levels (light to dark green)
+        intensity: [
+          '#B7E4C7', // level 1: light (short visit, first time)
+          '#74C69D', // level 2: medium
+          '#40916C', // level 3: darker
+          '#2D6A4F', // level 4: dark (long visit or many visits)
+          '#1B4332', // level 5: darkest
+        ],
+      };
+
+      // State
+      let timelineData = [];
+      let currentIndex = 0;
+      let isPlaying = false;
+      let playSpeed = 1;
+      let playInterval = null;
+      let visitedPlaces = 0;
+      let totalMiles = 0;
+      let lastCoords = HOME;
+
+      // Visit tracking: state/country/region -> { visits: number, totalDays: number }
+      const stateVisits = new Map();        // US states
+      const countryVisits = new Map();      // All countries (for base country shading)
+      const foreignRegionVisits = new Map(); // Foreign regions/cities for detailed markers
+      let discoveredCountries = new Set();
+
+      // Routes between places
+      let routes = [];
+      let activeRouteAnimation = null;
+
+      // US States GeoJSON (will be loaded)
+      let usStatesGeoJSON = null;
+
+      // World admin-1 (states/provinces) GeoJSON for foreign countries
+      let worldAdmin1GeoJSON = null;
+
+      const isMobile = window.innerWidth <= 480;
+
+      const map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/light-v11',
+        center: [HOME.lon, HOME.lat],
+        zoom: isMobile ? 3 : 4,
+      });
+
+      // Haversine distance calculation (returns miles)
+      function haversineDistance(coord1, coord2) {
+        const R = 3959; // Earth's radius in miles
+        const lat1 = coord1.lat * Math.PI / 180;
+        const lat2 = coord2.lat * Math.PI / 180;
+        const dLat = (coord2.lat - coord1.lat) * Math.PI / 180;
+        const dLon = (coord2.lon - coord1.lon) * Math.PI / 180;
+
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat1) * Math.cos(lat2) *
+                  Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+      }
+
+      // Calculate intensity level based on visits and days
+      // Buckets: short (1-2 days), medium (3-5 days), long (6+ days)
+      function calculateIntensity(visits, totalDays) {
+        let score = 0;
+        // Each visit adds base points
+        score += visits * 1;
+        // Days add weighted points: short=1, medium=2, long=3
+        if (totalDays >= 6) score += 3;
+        else if (totalDays >= 3) score += 2;
+        else score += 1;
+        // Map score to intensity level (1-5)
+        if (score >= 8) return 4;
+        if (score >= 5) return 3;
+        if (score >= 3) return 2;
+        if (score >= 2) return 1;
+        return 0;
+      }
+
+      // Get coordinates for an entry
+      function getCoordsForEntry(entry) {
+        // Try state/region centroid first
+        if (entry.state && stateCentroids[entry.state]) {
+          return stateCentroids[entry.state];
+        }
+        // Fallback to country centroid
+        const iso = countryToISO[entry.country];
+        if (iso && countryCentroids[iso]) {
+          return countryCentroids[iso];
+        }
+        // Final fallback to home
+        return HOME;
+      }
+
+      function buildRoutesGeoJSON() {
+        return {
+          type: 'FeatureCollection',
+          features: routes.map((r, i) => ({
+            type: 'Feature',
+            geometry: turf.greatCircle([r.from.lon, r.from.lat], [r.to.lon, r.to.lat], { npoints: 50 }).geometry,
+            properties: { index: i },
+          })),
+        };
+      }
+
+      // Animate a new route line growing from origin to destination
+      function animateRoute(from, to, duration = 700) {
+        // Cancel any existing animation
+        if (activeRouteAnimation) {
+          cancelAnimationFrame(activeRouteAnimation);
+          activeRouteAnimation = null;
+        }
+
+        // Generate the full arc
+        const arc = turf.greatCircle([from.lon, from.lat], [to.lon, to.lat], { npoints: 60 });
+        const coords = arc.geometry.coordinates;
+        const totalPoints = coords.length;
+
+        const startTime = performance.now();
+
+        function animate(currentTime) {
+          const elapsed = currentTime - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+
+          // Ease out cubic for smooth deceleration
+          const eased = 1 - Math.pow(1 - progress, 3);
+
+          // Calculate how many points to show
+          const pointsToShow = Math.max(2, Math.floor(eased * totalPoints));
+
+          // Update the active route with partial coordinates
+          const partialCoords = coords.slice(0, pointsToShow);
+          const activeRouteData = {
+            type: 'FeatureCollection',
+            features: [{
+              type: 'Feature',
+              geometry: {
+                type: 'LineString',
+                coordinates: partialCoords,
+              },
+              properties: {},
+            }],
+          };
+
+          map.getSource('active-route')?.setData(activeRouteData);
+
+          if (progress < 1) {
+            activeRouteAnimation = requestAnimationFrame(animate);
+          } else {
+            // Animation complete - add to permanent routes and clear active
+            routes.push({ from, to });
+            map.getSource('routes')?.setData(buildRoutesGeoJSON());
+            map.getSource('active-route')?.setData({ type: 'FeatureCollection', features: [] });
+            activeRouteAnimation = null;
+          }
+        }
+
+        activeRouteAnimation = requestAnimationFrame(animate);
+      }
+
+      // Build US states GeoJSON with intensity colors
+      function buildStatesWithIntensity() {
+        if (!usStatesGeoJSON) return { type: 'FeatureCollection', features: [] };
+
+        const features = usStatesGeoJSON.features.map(f => {
+          const stateName = f.properties.NAME || f.properties.name;
+          const abbr = stateToAbbr[stateName];
+          const visit = stateVisits.get(stateName);
+
+          let intensity = -1; // not visited
+          if (visit) {
+            intensity = calculateIntensity(visit.visits, visit.totalDays);
+          }
+
+          return {
+            ...f,
+            properties: {
+              ...f.properties,
+              abbr,
+              intensity,
+              visited: visit ? true : false,
+            },
+          };
+        });
+
+        return { type: 'FeatureCollection', features };
+      }
+
+      // Generate country fill expression - always light shade for visited countries
+      // (regional markers will show the intensity detail)
+      function makeCountryFillColor() {
+        // Build match expression for visited countries (non-US)
+        const conditions = [];
+        countryVisits.forEach((visit, iso) => {
+          if (iso === 'USA') return; // Handle US separately via states
+          // Always use lightest shade for country base
+          conditions.push(iso);
+          conditions.push(palette.intensity[0]); // Light base shade
+        });
+
+        if (conditions.length === 0) {
+          return palette.neutral;
+        }
+
+        return [
+          'match',
+          ['get', COUNTRY_PROP],
+          ...conditions,
+          palette.neutral,
+        ];
+      }
+
+      // Build GeoJSON for foreign region fills with intensity
+      // Filters world admin-1 boundaries to only visited regions
+      function buildForeignRegionsGeoJSON() {
+        if (!worldAdmin1GeoJSON) return { type: 'FeatureCollection', features: [] };
+
+        const features = [];
+
+        // Build a set of visited region names (mapped to Natural Earth names)
+        const visitedRegionNames = new Map(); // NE name -> { visits, totalDays }
+        foreignRegionVisits.forEach((visit, key) => {
+          const [country, region] = key.split('::');
+          // Map our region name to Natural Earth name
+          const neName = regionNameMapping[region] || region;
+          visitedRegionNames.set(neName, visit);
+        });
+
+        // Filter world admin-1 to only visited regions
+        worldAdmin1GeoJSON.features.forEach(f => {
+          const regionName = f.properties.name;
+          const countryName = f.properties.admin;
+
+          // Skip USA - handled separately
+          if (countryName === 'United States of America') return;
+
+          // Check if this region was visited
+          const visit = visitedRegionNames.get(regionName);
+          if (visit) {
+            const intensity = calculateIntensity(visit.visits, visit.totalDays);
+            console.log('Matched region:', regionName, 'in', countryName, 'intensity:', intensity);
+            features.push({
+              ...f,
+              properties: {
+                ...f.properties,
+                intensity,
+                visited: true,
+                visits: visit.visits,
+                totalDays: visit.totalDays,
+              },
+            });
+          }
+        });
+
+        console.log('Foreign regions found:', features.length, 'from', visitedRegionNames.size, 'visited');
+        return { type: 'FeatureCollection', features };
+      }
+
+      function refreshStyling() {
+        // Update country fills (non-US) - light base shade
+        if (map.getLayer('country-fills')) {
+          map.setPaintProperty('country-fills', 'fill-color', makeCountryFillColor());
+        }
+
+        // Update US states
+        if (map.getSource('us-states')) {
+          map.getSource('us-states').setData(buildStatesWithIntensity());
+        }
+
+        // Update foreign region markers
+        if (map.getSource('foreign-regions')) {
+          map.getSource('foreign-regions').setData(buildForeignRegionsGeoJSON());
+        }
+      }
+
+      function formatDate(dateStr) {
+        const d = new Date(dateStr + 'T12:00:00');
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      }
+
+      function formatMiles(miles) {
+        if (miles >= 1000) {
+          return (miles / 1000).toFixed(1) + 'k mi';
+        }
+        return Math.round(miles).toLocaleString() + ' mi';
+      }
+
+      function updateUI(entry) {
+        document.getElementById('loc-city').textContent = entry.city;
+        document.getElementById('loc-region').textContent = `${entry.state || ''}, ${entry.country}`.replace(/^, /, '');
+        document.getElementById('loc-date').textContent = formatDate(entry.date);
+        document.getElementById('timeline-date').textContent = formatDate(entry.date);
+        document.getElementById('timeline-places').textContent = `${visitedPlaces} places`;
+        document.getElementById('odometer').textContent = formatMiles(totalMiles);
+
+        const progress = ((currentIndex + 1) / timelineData.length) * 100;
+        document.getElementById('progress-fill').style.width = progress + '%';
+
+        addCredit(entry);
+      }
+
+      const creditItems = [];
+      function addCredit(entry) {
+        const container = document.getElementById('credits-scroll');
+        const div = document.createElement('div');
+        div.className = 'credit-item';
+        div.innerHTML = `
+          <div class="credit-city">${entry.city}</div>
+          <div class="credit-meta">${formatDate(entry.date)} • ${entry.days}d • ${entry.photos} photos</div>
+        `;
+        container.insertBefore(div, container.firstChild);
+        creditItems.unshift(div);
+
+        while (creditItems.length > 8) {
+          const old = creditItems.pop();
+          old.classList.add('fading');
+          setTimeout(() => old.remove(), 500);
+        }
+      }
+
+      function processEntry(entry) {
+        visitedPlaces++;
+        const iso = countryToISO[entry.country];
+        const coords = getCoordsForEntry(entry);
+        const days = entry.days || 1;
+
+        // Calculate distance from last location and animate route
+        const distance = haversineDistance(lastCoords, coords);
+        if (distance > 50) { // Only add routes for significant distances (>50 miles)
+          totalMiles += distance;
+          // Animate the route growing - duration scales with playback speed
+          const animDuration = Math.max(200, 700 / playSpeed);
+          animateRoute(lastCoords, coords, animDuration);
+        }
+        lastCoords = coords;
+
+        // Track country visit
+        if (iso) {
+          if (!countryVisits.has(iso)) {
+            countryVisits.set(iso, { visits: 0, totalDays: 0 });
+            discoveredCountries.add(iso);
+          }
+          const cv = countryVisits.get(iso);
+          cv.visits++;
+          cv.totalDays += days;
+        }
+
+        // Track US state visit
+        if (entry.country === 'United States' && entry.state) {
+          if (!stateVisits.has(entry.state)) {
+            stateVisits.set(entry.state, { visits: 0, totalDays: 0 });
+          }
+          const sv = stateVisits.get(entry.state);
+          sv.visits++;
+          sv.totalDays += days;
+        }
+
+        // Track foreign region visit (non-US)
+        if (entry.country !== 'United States') {
+          const regionKey = `${entry.country}::${entry.state || entry.city}`;
+          if (!foreignRegionVisits.has(regionKey)) {
+            foreignRegionVisits.set(regionKey, { visits: 0, totalDays: 0 });
+          }
+          const fr = foreignRegionVisits.get(regionKey);
+          fr.visits++;
+          fr.totalDays += days;
+        }
+
+        // Refresh map styling
+        refreshStyling();
+
+        // Fly to current location - lower zoom to show more context
+        const zoom = entry.country === 'United States' ? 4.5 : 3.5;
+        map.flyTo({ center: [coords.lon, coords.lat], zoom: zoom, duration: 800 });
+
+        updateUI(entry);
+      }
+
+      function playNext() {
+        if (currentIndex >= timelineData.length) {
+          stopPlayback();
+          return;
+        }
+
+        const entry = timelineData[currentIndex];
+        processEntry(entry);
+        currentIndex++;
+      }
+
+      function startPlayback() {
+        if (isPlaying) return;
+        isPlaying = true;
+        document.getElementById('btn-play').textContent = 'Pause';
+        document.getElementById('btn-play').classList.add('active');
+
+        const baseDelay = 1200;
+        const delay = baseDelay / playSpeed;
+        playInterval = setInterval(playNext, delay);
+      }
+
+      function stopPlayback() {
+        isPlaying = false;
+        document.getElementById('btn-play').textContent = 'Play';
+        document.getElementById('btn-play').classList.remove('active');
+        if (playInterval) {
+          clearInterval(playInterval);
+          playInterval = null;
+        }
+      }
+
+      function togglePlayback() {
+        if (isPlaying) stopPlayback();
+        else startPlayback();
+      }
+
+      function cycleSpeed() {
+        const speeds = [1, 2, 4, 8];
+        const idx = speeds.indexOf(playSpeed);
+        playSpeed = speeds[(idx + 1) % speeds.length];
+        document.getElementById('btn-speed').textContent = playSpeed + 'x';
+
+        if (isPlaying) {
+          stopPlayback();
+          startPlayback();
+        }
+      }
+
+      function reset() {
+        stopPlayback();
+        currentIndex = 0;
+        stateVisits.clear();
+        countryVisits.clear();
+        foreignRegionVisits.clear();
+        discoveredCountries.clear();
+        routes = [];
+        lastCoords = HOME;
+        visitedPlaces = 0;
+        totalMiles = 0;
+        creditItems.forEach(c => c.remove());
+        creditItems.length = 0;
+
+        // Cancel any running animation
+        if (activeRouteAnimation) {
+          cancelAnimationFrame(activeRouteAnimation);
+          activeRouteAnimation = null;
+        }
+
+        map.getSource('routes')?.setData({ type: 'FeatureCollection', features: [] });
+        map.getSource('active-route')?.setData({ type: 'FeatureCollection', features: [] });
+        map.getSource('foreign-regions')?.setData({ type: 'FeatureCollection', features: [] });
+        refreshStyling();
+
+        document.getElementById('progress-fill').style.width = '0%';
+        document.getElementById('timeline-date').textContent = '--';
+        document.getElementById('loc-city').textContent = 'Ready';
+        document.getElementById('loc-region').textContent = '';
+        document.getElementById('loc-date').textContent = '';
+        document.getElementById('odometer').textContent = '0 mi';
+
+        map.flyTo({ center: [HOME.lon, HOME.lat], zoom: isMobile ? 3 : 4, duration: 1000 });
+      }
+
+      // Load US States GeoJSON
+      async function loadUSStates() {
+        try {
+          const response = await fetch('https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json');
+          usStatesGeoJSON = await response.json();
+        } catch (err) {
+          console.warn('Could not load US states GeoJSON:', err);
+        }
+      }
+
+      // Load World Admin-1 (states/provinces) GeoJSON for foreign countries
+      // Using 10m resolution which includes European countries
+      async function loadWorldAdmin1() {
+        try {
+          const response = await fetch('https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_1_states_provinces.geojson');
+          worldAdmin1GeoJSON = await response.json();
+          console.log('Loaded world admin-1:', worldAdmin1GeoJSON.features.length, 'regions');
+        } catch (err) {
+          console.warn('Could not load world admin-1 GeoJSON:', err);
+        }
+      }
+
+      // Load timeline data
+      fetch('timeline-data-sean.json')
+        .then(r => r.json())
+        .then(data => {
+          timelineData = data;
+          document.getElementById('loc-city').textContent = 'Ready';
+          document.getElementById('loc-region').textContent = `${data.length} places to explore`;
+        })
+        .catch(err => {
+          console.error('Failed to load timeline:', err);
+          document.getElementById('loc-city').textContent = 'Error loading data';
+        });
+
+      // Initialize map
+      map.on('load', async () => {
+        // Load boundary data in parallel
+        await Promise.all([loadUSStates(), loadWorldAdmin1()]);
+
+        // Add country boundaries (for non-US countries)
+        map.addSource('countries', { type: 'vector', url: 'mapbox://mapbox.country-boundaries-v1' });
+
+        map.addLayer({
+          id: 'country-fills',
+          type: 'fill',
+          source: 'countries',
+          'source-layer': 'country_boundaries',
+          filter: ['!=', ['get', COUNTRY_PROP], 'USA'], // Exclude USA, we handle states separately
+          paint: {
+            'fill-color': palette.neutral,
+            'fill-opacity': 1,  // Full opacity to cover base map completely
+          },
+        });
+
+        map.addLayer({
+          id: 'country-borders',
+          type: 'line',
+          source: 'countries',
+          'source-layer': 'country_boundaries',
+          paint: { 'line-color': '#cccccc', 'line-width': 0.5 },
+        });
+
+        // Add US states layer
+        map.addSource('us-states', {
+          type: 'geojson',
+          data: buildStatesWithIntensity(),
+        });
+
+        map.addLayer({
+          id: 'us-state-fills',
+          type: 'fill',
+          source: 'us-states',
+          paint: {
+            'fill-color': [
+              'case',
+              ['==', ['get', 'intensity'], 4], palette.intensity[4],
+              ['==', ['get', 'intensity'], 3], palette.intensity[3],
+              ['==', ['get', 'intensity'], 2], palette.intensity[2],
+              ['==', ['get', 'intensity'], 1], palette.intensity[1],
+              ['==', ['get', 'intensity'], 0], palette.intensity[0],
+              palette.neutral,
+            ],
+            'fill-opacity': 1,  // Full opacity - all states same base appearance
+          },
+        });
+
+        map.addLayer({
+          id: 'us-state-borders',
+          type: 'line',
+          source: 'us-states',
+          paint: {
+            'line-color': [
+              'case',
+              ['get', 'visited'], '#40916C',
+              '#cccccc',
+            ],
+            'line-width': 1,
+          },
+        });
+
+        // Completed routes layer
+        map.addSource('routes', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+        map.addLayer({
+          id: 'route-lines',
+          type: 'line',
+          source: 'routes',
+          paint: {
+            'line-color': palette.route,
+            'line-width': 2,
+            'line-opacity': 0.6,
+            'line-dasharray': [2, 1.5],
+          },
+          layout: { 'line-cap': 'round', 'line-join': 'round' },
+        });
+
+        // Active (animating) route layer - brighter, dashed to match completed routes
+        map.addSource('active-route', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+        map.addLayer({
+          id: 'active-route-line',
+          type: 'line',
+          source: 'active-route',
+          paint: {
+            'line-color': '#52B788',
+            'line-width': 3,
+            'line-opacity': 1,
+            'line-dasharray': [2, 1.5],
+          },
+          layout: { 'line-cap': 'round', 'line-join': 'round' },
+        });
+
+        // Foreign region fills - shows intensity for specific regions within countries
+        map.addSource('foreign-regions', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+        map.addLayer({
+          id: 'foreign-region-fills',
+          type: 'fill',
+          source: 'foreign-regions',
+          paint: {
+            'fill-color': [
+              'case',
+              ['==', ['get', 'intensity'], 4], palette.intensity[4],
+              ['==', ['get', 'intensity'], 3], palette.intensity[3],
+              ['==', ['get', 'intensity'], 2], palette.intensity[2],
+              ['==', ['get', 'intensity'], 1], palette.intensity[1],
+              ['==', ['get', 'intensity'], 0], palette.intensity[0],
+              palette.intensity[0],
+            ],
+            'fill-opacity': 1,  // Full opacity for visited regions
+          },
+        });
+
+        // Foreign region borders
+        map.addLayer({
+          id: 'foreign-region-borders',
+          type: 'line',
+          source: 'foreign-regions',
+          paint: {
+            'line-color': '#40916C',
+            'line-width': 1,
+          },
+        });
+
+        // Home marker
+        map.addSource('home', {
+          type: 'geojson',
+          data: { type: 'Feature', geometry: { type: 'Point', coordinates: [HOME.lon, HOME.lat] } },
+        });
+        map.addLayer({
+          id: 'home-point',
+          type: 'circle',
+          source: 'home',
+          paint: {
+            'circle-radius': 8,
+            'circle-color': '#1B4332',
+            'circle-stroke-color': '#52B788',
+            'circle-stroke-width': 3,
+          },
+        });
+      });
+
+      // Event handlers
+      document.getElementById('btn-play').addEventListener('click', togglePlayback);
+      document.getElementById('btn-speed').addEventListener('click', cycleSpeed);
+    </script>
+  </body>
+</html>
